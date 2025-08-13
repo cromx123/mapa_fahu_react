@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+  <!-- Permite HTTP para todo (simple para pruebas) -->
+  <base-config cleartextTrafficPermitted="true" />
+  <!-- O si prefieres solo tu host:
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">154.38.176.78</domain>
+  </domain-config>
+  -->
+</network-security-config>

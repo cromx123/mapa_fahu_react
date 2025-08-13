@@ -358,6 +358,18 @@ export default function useCampusMapController() {
     });
   }
 
+  // Limpia todo: texto, ruta, marcadores e info
+  const clearSearch = useCallback(() => {
+    setQuery("");
+    setMarkers([]);
+    setRoutePoints([]);
+    setSelectedPlace(null);
+    setIsInfoCardVisible(false);
+    setIsNavigationActive(false);
+    setFollowUser(false);
+  }, []);
+
+
   return {
     // estado
     query, setQuery,
@@ -372,6 +384,7 @@ export default function useCampusMapController() {
 
     distanciaM, tiempoMin, etaDate,
     remainingMinutes, distanciaLabel, etaLabel,
+    clearSearch,
 
     // acciones
     filterSuggestions,
