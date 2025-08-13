@@ -3,3 +3,5 @@
 @tailwind components;
 @tailwind utilities;
 /* Add your custom styles here */
+
+html, body, #root { height: 100%; }
