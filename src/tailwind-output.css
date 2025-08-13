@@ -900,10 +900,6 @@ video {
 
 /* Add your custom styles here */
 
-html, body, #root {
-  height: 100%;
-}
-
 .hover\:bg-blue-700:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(29 78 216 / var(--tw-bg-opacity, 1));
