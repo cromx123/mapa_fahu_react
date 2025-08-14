@@ -11,6 +11,8 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import useCampusMap from "../hooks/useCampusMapController";
+import CameraFollow from "./CameraFollow";
+import HeadingLocationMarker from "./HeadingLocationMarker";
 
 // Fix de iconos Leaflet (CRA)
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
@@ -103,6 +105,10 @@ export default function CampusMapScreen() {
     suggestions,
     query,
     isInfoCardVisible,
+    userCoord, 
+    setUserCoord,
+    accuracyM,
+    HARD_LOCK_CENTER,
     // acciones
     setQuery,
     buscarYRutaDesdeBackend,
@@ -110,7 +116,7 @@ export default function CampusMapScreen() {
     filterSuggestions,
     mostrarBusqueda,
     onMapEvent,
-
+    followUser,
     isNavigationActive,
     startNavigation, 
     stopNavigation,
@@ -118,12 +124,14 @@ export default function CampusMapScreen() {
     distanciaLabel, 
     etaLabel, 
     clearSearch,
+    headingRadRef,
+    estPosRef,
+    offsetMeters,
   } = useCampusMap();
 
   const inputRef = useRef(null);
   const [openSugg, setOpenSugg] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
-  const [userCoord, setUserCoord] = useState(null);
   const isLargeScreen = useMemo(() => window.innerWidth > 800, []);
 
   // Filtros rápidos como en Flutter
@@ -194,7 +202,12 @@ export default function CampusMapScreen() {
               </>
             )}
 
-            <MyLocationMarker coord={userCoord} />
+            <HeadingLocationMarker             
+            coord={userCoord}
+            headingRad={headingRadRef.current || 0}
+            accuracyM={accuracyM}
+            />
+
 
             {markers.map((m) => (
               <Marker
@@ -211,6 +224,17 @@ export default function CampusMapScreen() {
 
             {/* NUEVO: barra de controles unificada */}
             <ControlBar setUserCoord={setUserCoord} />
+
+            <CameraFollow
+              followUser={followUser}                 
+              isNavigationActive={isNavigationActive}
+              HARD_LOCK_CENTER={HARD_LOCK_CENTER}
+              userCoord={userCoord}
+              estPosRef={estPosRef}
+              headingRadRef={headingRadRef}
+              offsetMeters={offsetMeters}
+            />
+
           </MapContainer>
 
           {/* Controles superiores (Busqueda + Filtros) */}

@@ -15,7 +15,7 @@ export default function useCampusMapController() {
   // Navegación / seguimiento
   const [isNavigationActive, setIsNavigationActive] = useState(false);
   const [followUser, setFollowUser] = useState(false);
-
+  const HARD_LOCK_CENTER = true;
   // Posición y heading “fusionados”
   const userPosRef = useRef(null);         // {lat, lng, accuracy}
   const estPosRef  = useRef(null);         // posición “suavizada”
@@ -25,6 +25,9 @@ export default function useCampusMapController() {
   const lastRerouteTsRef = useRef(0);      // cooldown p/ re-ruta
   const rerouteCooldownMs = 6000;
   const deviationThresholdM = 0.5; // como en Flutter
+  
+  const [userCoord, setUserCoord] = useState(null); // {lat, lng}
+  const [accuracyM, setAccuracyM] = useState(20);
 
   // Distancias/tiempos
   const [distanciaM, setDistanciaM] = useState(0);
@@ -34,6 +37,14 @@ export default function useCampusMapController() {
   // ---- Utilidades geométricas ----
   const toMetersX = (lon, latRef) => lon * 111320.0 * Math.cos((latRef * Math.PI) / 180.0);
   const toMetersY = (lat) => lat * 110540.0;
+  
+  const offsetMeters = (p, dx, dy) => {
+  const [lat, lng] = p;
+  const R = 6378137.0;
+  const dLat = dy / R;
+  const dLng = dx / (R * Math.cos((lat * Math.PI) / 180.0));
+  return [lat + (dLat * 180.0) / Math.PI, lng + (dLng * 180.0) / Math.PI];
+  };
 
   const distancePointToPolylineMeters = (p, line) => {
     if (!line || line.length < 2) return Number.POSITIVE_INFINITY;
@@ -65,18 +76,6 @@ export default function useCampusMapController() {
       if (d < best) best = d;
     }
     return best;
-  };
-
-  const offsetMeters = (p, dx, dy) => {
-    // dx,dy en metros sobre lat/lng
-    const [lat, lng] = p;
-    const R = 6378137.0;
-    const dLat = dy / R;
-    const dLng = dx / (R * Math.cos((lat * Math.PI) / 180.0));
-    return [
-      lat + (dLat * 180.0) / Math.PI,
-      lng + (dLng * 180.0) / Math.PI,
-    ];
   };
 
   const normalizeAngle = (a) => {
@@ -164,6 +163,7 @@ export default function useCampusMapController() {
       const pos = await getUserPosition();
       if (!pos) return;
       userPosRef.current = pos;
+      setUserCoord({ lat: pos.lat, lng: pos.lng });
       if (!estPosRef.current) estPosRef.current = [pos.lat, pos.lng];
 
       // 3) /ruta_desde_ubicacion?lat=..&lng=..&destino=id
@@ -223,6 +223,7 @@ export default function useCampusMapController() {
       setIsInfoCardVisible(false);
     } catch {}
   }, []);
+  const mostrarBusqueda = mostrar_busqueda;
 
   // ---- Seguimiento/posición/heading (Web APIs) ----
   useEffect(() => {
@@ -320,8 +321,12 @@ export default function useCampusMapController() {
   }, []);
 
   const onMapEvent = useCallback(() => {
-    // si el usuario mueve el mapa manualmente y estamos siguiendo, deja de seguir
-    if (followUser) setFollowUser(false);
+    if (!followUser) return;
+      if (HARD_LOCK_CENTER) {
+      // ignorar pans del usuario; CameraFollow re-centrará
+      return;
+    }
+    setFollowUser(false);
   }, [followUser]);
 
   const onMarkerClick = useCallback((place) => {
@@ -381,7 +386,9 @@ export default function useCampusMapController() {
 
     isNavigationActive,
     followUser,
-
+    HARD_LOCK_CENTER,
+    userCoord, setUserCoord,
+    accuracyM,
     distanciaM, tiempoMin, etaDate,
     remainingMinutes, distanciaLabel, etaLabel,
     clearSearch,
@@ -390,6 +397,7 @@ export default function useCampusMapController() {
     filterSuggestions,
     buscarYRutaDesdeBackend,
     mostrar_busqueda,
+    mostrarBusqueda,
     moveToUserLocation,
     toggleFollowUser,
     startNavigation,
@@ -402,5 +410,6 @@ export default function useCampusMapController() {
     userPosRef,
     estPosRef,
     headingRadRef,
+    offsetMeters,
   };
 }
