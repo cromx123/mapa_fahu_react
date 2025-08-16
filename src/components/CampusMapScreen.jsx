@@ -12,7 +12,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import useCampusMap from "../hooks/useCampusMapController";
 import CameraFollow from "./CameraFollow";
-import HeadingLocationMarker from "./HeadingLocationMarker";
+import HeadingLocationMarkerLion from "./HeadingLocationMarker";
 
 // Fix de iconos Leaflet (CRA)
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
@@ -143,6 +143,31 @@ export default function CampusMapScreen() {
     { label: "Otros", query: "otros" },
   ];
 
+  const lastPosRef = useRef(null);
+  const [speedMps, setSpeedMps] = useState(0);
+
+  useEffect(() => {
+    if (!userCoord?.lat || !userCoord?.lng) return;
+    const now = Date.now();
+    if (lastPosRef.current) {
+      const { lat, lng, t } = lastPosRef.current;
+      const dt = (now - t) / 1000;
+      if (dt > 0) {
+        const R = 6378137;
+        const toRad = (x) => (x * Math.PI) / 180;
+        const dLat = toRad(userCoord.lat - lat);
+        const dLng = toRad(userCoord.lng - lng);
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(toRad(lat)) * Math.cos(toRad(userCoord.lat)) * Math.sin(dLng / 2) ** 2;
+        const d = 2 * R * Math.asin(Math.sqrt(a));
+        setSpeedMps(d / dt);
+      }
+    }
+    lastPosRef.current = { lat: userCoord.lat, lng: userCoord.lng, t: now };
+  }, [userCoord]);
+
+
   return (
     <div className="h-screen w-screen">
       {/* Layout tipo Flutter: panel a la izquierda en pantallas grandes */}
@@ -202,10 +227,12 @@ export default function CampusMapScreen() {
               </>
             )}
 
-            <HeadingLocationMarker             
+            <HeadingLocationMarkerLion             
             coord={userCoord}
             headingRad={headingRadRef.current || 0}
             accuracyM={accuracyM}
+            walking={isNavigationActive || speedMps > 0.2}
+            speedMps={speedMps}
             />
 
 
