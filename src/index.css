@@ -5,3 +5,28 @@
 /* Add your custom styles here */
 
 html, body, #root { height: 100%; }
+
+/* Animaciones del león para Leaflet divIcon (WebView friendly) */
+@keyframes lion-bob {
+  0%,100% { transform: translateY(0) }
+  50%     { transform: translateY(-2px) }
+}
+@keyframes lion-leg {
+  0%   { transform: rotate(14deg) }
+  50%  { transform: rotate(-14deg) }
+  100% { transform: rotate(14deg) }
+}
+
+.heading-marker-lion .bob {
+  animation-name: lion-bob;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.heading-marker-lion .leg {
+  transform-origin: 12px 6px;
+  animation-name: lion-leg;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+/* por si Tailwind aplica algo raro a svg/img */
+.heading-marker-lion svg { display:block; max-width:none; }

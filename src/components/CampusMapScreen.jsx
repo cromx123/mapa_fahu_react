@@ -12,7 +12,10 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import useCampusMap from "../hooks/useCampusMapController";
 import CameraFollow from "./CameraFollow";
-import HeadingLocationMarker from "./HeadingLocationMarker";
+import HeadingLocationMarkerLion from "./HeadingLocationMarker";
+import DrawerMenu from "./DrawerMenu"; 
+
+
 
 // Fix de iconos Leaflet (CRA)
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
@@ -52,7 +55,6 @@ function MyLocationMarker({ coord }) {
   );
 }
 
-/* NUEVO: barra de controles (- ⦿ +) abajo-derecha */
 function ControlBar({ setUserCoord }) {
   const map = useMap();
 
@@ -134,6 +136,31 @@ export default function CampusMapScreen() {
   const [selectedFilter, setSelectedFilter] = useState(null);
   const isLargeScreen = useMemo(() => window.innerWidth > 800, []);
 
+  // ⟵⟵⟵ NUEVO: estado del Drawer
+  const [openMenu, setOpenMenu] = useState(false);
+
+  // ⟵⟵⟵ NUEVO: función de i18n simple (reemplaza por tu i18n real)
+  const t = (k) =>
+    ({
+      ms_menuTitle: "Menú",
+      ms_login: "Iniciar sesión",
+      ms_portalUsach: "Portal USACH",
+      ms_portalFahu: "Portal FAHU",
+      ms_portalAlumnos: "Portal Alumnos",
+      ms_onlineServices: "Servicios en línea",
+      ms_onlineLibrary: "Biblioteca en línea",
+      ms_settings: "Configuración",
+    }[k] || k);
+
+  // ⟵⟵⟵ NUEVO: tema (azul/naranjo USACH). Ajusta si usas modo claro/oscuro.
+  const drawerTheme = {
+    primary: "#003B71",
+    accent: "#E77500",
+    surface: "#0B0F14",   // panel
+    text: "#E5E7EB",
+    icon: "#9CA3AF",
+  };
+
   // Filtros rápidos como en Flutter
   const filters = [
     { label: "Bibliotecas", query: "biblioteca" },
@@ -143,8 +170,48 @@ export default function CampusMapScreen() {
     { label: "Otros", query: "otros" },
   ];
 
+  const lastPosRef = useRef(null);
+  const [speedMps, setSpeedMps] = useState(0);
+
+  useEffect(() => {
+    if (!userCoord?.lat || !userCoord?.lng) return;
+    const now = Date.now();
+    if (lastPosRef.current) {
+      const { lat, lng, t } = lastPosRef.current;
+      const dt = (now - t) / 1000;
+      if (dt > 0) {
+        const R = 6378137;
+        const toRad = (x) => (x * Math.PI) / 180;
+        const dLat = toRad(userCoord.lat - lat);
+        const dLng = toRad(userCoord.lng - lng);
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(toRad(lat)) * Math.cos(toRad(userCoord.lat)) * Math.sin(dLng / 2) ** 2;
+        const d = 2 * R * Math.asin(Math.sqrt(a));
+        setSpeedMps(d / dt);
+      }
+    }
+    lastPosRef.current = { lat: userCoord.lat, lng: userCoord.lng, t: now };
+  }, [userCoord]);
+
+
   return (
     <div className="h-screen w-screen">
+      <DrawerMenu
+        isOpen={openMenu}
+        onClose={() => setOpenMenu(false)}
+        t={(k) => ({
+          ms_menuTitle: "Menú",
+          ms_login: "Iniciar sesión",
+          ms_portalUsach: "Portal USACH",
+          ms_portalFahu: "Portal FAHU",
+          ms_portalAlumnos: "Portal Alumnos",
+          ms_onlineServices: "Servicios en línea",
+          ms_onlineLibrary: "Biblioteca en línea",
+          ms_settings: "Configuración",
+        }[k] || k)}
+      />
+
       {/* Layout tipo Flutter: panel a la izquierda en pantallas grandes */}
       <div className="h-full w-full flex">
         {isLargeScreen && isInfoCardVisible && (selectedPlace || routePoints.length > 0) && (
@@ -202,10 +269,12 @@ export default function CampusMapScreen() {
               </>
             )}
 
-            <HeadingLocationMarker             
+            <HeadingLocationMarkerLion             
             coord={userCoord}
             headingRad={headingRadRef.current || 0}
             accuracyM={accuracyM}
+            walking={isNavigationActive || speedMps > 0.2}
+            speedMps={speedMps}
             />
 
 
@@ -284,7 +353,7 @@ export default function CampusMapScreen() {
                     type="button"
                     className="px-2 py-1 rounded-lg hover:bg-gray-100"
                     title="Abrir menú"
-                    onClick={() => alert("Abrir menú (placeholder)")}
+                    onClick={() => setOpenMenu(true)}
                   >
                     ☰
                   </button>
