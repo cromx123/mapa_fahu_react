@@ -1,10 +1,20 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function EstadosSolicitudesScreen() {
+
+  const navigate = useNavigate();
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* AppBar */}
       <header className="bg-teal-600 text-white px-4 py-3 shadow">
+        <button
+          onClick={() => navigate(-1)}
+          className="mr-3 text-xl hover:text-gray-200"
+        >
+          ← 
+        </button>  {/*Cambiar el icono por <*/}
         <h1 className="text-lg font-bold">Solicitud</h1>
       </header>
 

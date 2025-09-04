@@ -1,9 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.tuapp.mapa',
+  appId: 'com.fahuapp.mapa',
   appName: 'mapa-fahu',
-  webDir: 'build'
+  webDir: 'build',
 };
 
 export default config;
