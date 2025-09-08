@@ -15,7 +15,7 @@ export default function useCampusMapController() {
   // Navegación / seguimiento
   const [isNavigationActive, setIsNavigationActive] = useState(false);
   const [followUser, setFollowUser] = useState(false);
-  const HARD_LOCK_CENTER = true;
+  const HARD_LOCK_CENTER = false;
   // Posición y heading “fusionados”
   const userPosRef = useRef(null);         // {lat, lng, accuracy}
   const estPosRef  = useRef(null);         // posición “suavizada”
@@ -135,6 +135,36 @@ export default function useCampusMapController() {
     }
     return [...starts, ...contains].slice(0, limit);
   }, [suggestions]);
+  
+  const buscarDestino = useCallback(async (texto) => {
+    try {
+      const q = (texto ?? "").trim();
+      if (!q) return;
+
+      const r1 = await fetch(`${BASE_URL}/destinos?query=${encodeURIComponent(q)}`);
+      if (!r1.ok) return;
+      const j1 = await r1.json();
+      const item = j1?.items?.[0];
+      if (!item) return;
+
+      const dest = {
+        id: item.id,
+        name: item.nombre || "",
+        type: item.tipo || "",
+        sector: item.sector || "",
+        floor: item.nivel || "",
+        lat: item.lat,
+        lng: item.lng,
+      };
+
+      setSelectedPlace(dest);
+      setIsInfoCardVisible(true);
+      setMarkers([{ id: dest.id, name: dest.name, type: dest.type, lat: dest.lat, lng: dest.lng }]);
+      setRoutePoints([]); // ← aún no trazamos la ruta
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   // ---- Buscar y trazar ruta desde backend ----
   const buscarYRutaDesdeBackend = useCallback(async (texto) => {
@@ -308,6 +338,10 @@ export default function useCampusMapController() {
   const startNavigation = useCallback(() => {
     if (!routePoints.length || !selectedPlace?.id) return;
     setIsNavigationActive(true);
+
+    if (userPosRef.current) {
+      estPosRef.current = [userPosRef.current.lat, userPosRef.current.lng];
+    }
     setFollowUser(true);
   }, [routePoints.length, selectedPlace?.id]);
 
@@ -396,6 +430,7 @@ export default function useCampusMapController() {
     // acciones
     filterSuggestions,
     buscarYRutaDesdeBackend,
+    buscarDestino,  
     mostrar_busqueda,
     mostrarBusqueda,
     moveToUserLocation,

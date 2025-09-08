@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { nodeIcons } from "../utils/mapIcons";
 import {
   MapContainer,
   TileLayer,
@@ -81,7 +82,21 @@ function ControlBar({ setUserCoord }) {
         −
       </button>
       <button
-        onClick={locate}
+        onClick={() => {
+          if (!navigator.geolocation) return;
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const { latitude, longitude, accuracy } = pos.coords;
+              setUserCoord({ lat: latitude, lng: longitude, accuracy });
+              map.flyTo([latitude, longitude], Math.max(map.getZoom(), 18), { duration: 0.4 });
+
+              // 👇 activa seguir usuario SOLO si él lo pidió
+              // setFollowUser(true);
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 8000 }
+          );
+        }}
         className="rounded-lg border bg-white px-3 py-2 shadow hover:bg-gray-50"
         title="Mi ubicación"
       >
@@ -113,6 +128,7 @@ export default function CampusMapScreen() {
     HARD_LOCK_CENTER,
     // acciones
     setQuery,
+    buscarDestino,
     buscarYRutaDesdeBackend,
     onMarkerClick,
     filterSuggestions,
@@ -165,6 +181,7 @@ export default function CampusMapScreen() {
   const filters = [
     { label: "Bibliotecas", query: "biblioteca" },
     { label: "Casinos", query: "casino" },
+    { label: "Kioscos", query: "kiosko" },
     { label: "Baños", query: "baño" },
     { label: "Salas", query: "sala" },
     { label: "Otros", query: "otros" },
@@ -218,8 +235,9 @@ export default function CampusMapScreen() {
           <div className="w-[340px] p-3">
             <PlaceInfoCard
               place={selectedPlace}
-              routeAvailable={routePoints.length > 0}
+              routeAvailable={!!selectedPlace}
               isNavigationActive={isNavigationActive}
+              buscarYRutaDesdeBackend={buscarYRutaDesdeBackend}
               onStart={startNavigation}
               onStop={stopNavigation}
               onClear={() => { clearSearch(); setSelectedFilter(null); setOpenSugg(false); }}
@@ -227,6 +245,7 @@ export default function CampusMapScreen() {
               distanciaLabel={distanciaLabel}
               etaLabel={etaLabel}
             />
+
           </div>
         )}
         <div className="flex-1 relative">
@@ -235,8 +254,9 @@ export default function CampusMapScreen() {
               <div className="absolute bottom-0 left-0 right-0 p-3 z-[1000]">
                 <PlaceInfoCard
                   place={selectedPlace}
-                  routeAvailable={routePoints.length > 0}
+                  routeAvailable={!!selectedPlace}
                   isNavigationActive={isNavigationActive}
+                  buscarYRutaDesdeBackend={buscarYRutaDesdeBackend}
                   onStart={startNavigation}
                   onStop={stopNavigation}
                   onClear={() => { clearSearch(); setSelectedFilter(null); setOpenSugg(false); }}
@@ -278,18 +298,30 @@ export default function CampusMapScreen() {
             />
 
 
-            {markers.map((m) => (
-              <Marker
-                key={m.id}
-                position={[m.lat, m.lng]}
-                eventHandlers={{ click: () => onMarkerClick(m) }}
-              >
-                <Popup>
-                  <div className="font-semibold">{m.name}</div>
-                  <div className="text-xs text-gray-600">{m.type}</div>
-                </Popup>
-              </Marker>
-            ))}
+            {markers.map((m) => {
+              let icon = nodeIcons.default;
+
+              if (m.type?.toLowerCase() === "deporte") {
+                // Elige según el nombre del nodo
+                const nombre = m.name?.toLowerCase().replace(/\s*usach\s*/g, "").trim();
+                icon = nodeIcons.deporte[nombre] || nodeIcons.default;
+              } else {
+                icon = nodeIcons[m.type?.toLowerCase()] || nodeIcons.default;
+              }
+
+              return (
+                <Marker
+                  key={m.id}
+                  position={[m.lat, m.lng]}
+                  icon={icon}
+                >
+                  <Popup>
+                    <div className="font-semibold">{m.name}</div>
+                    <div className="text-xs text-gray-600">{m.type}</div>
+                  </Popup>
+                </Marker>
+              );
+            })}
 
             {/* NUEVO: barra de controles unificada */}
             <ControlBar setUserCoord={setUserCoord} />
@@ -321,7 +353,7 @@ export default function CampusMapScreen() {
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
-                      if (query?.trim()) buscarYRutaDesdeBackend(query.trim());
+                      if (query?.trim()) buscarDestino(query.trim());
                       setOpenSugg(false);
                     }}
                     className="flex-1 h-full"
@@ -378,7 +410,7 @@ export default function CampusMapScreen() {
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => {
                                 setQuery(name);
-                                buscarYRutaDesdeBackend(name);
+                                buscarDestino(name);
                                 setOpenSugg(false);
                               }}
                               className="w-full text-left px-3 py-2 hover:bg-gray-50"
@@ -433,6 +465,7 @@ export default function CampusMapScreen() {
 function PlaceInfoCard({
   place,
   routeAvailable,
+  buscarYRutaDesdeBackend,
   isNavigationActive,
   onStart,
   onStop,
@@ -494,7 +527,11 @@ function PlaceInfoCard({
       ) : (
         <div className="mt-4 flex items-center justify-between">
           <button
-            onClick={onStart}
+            onClick={() => {
+              if (place) {
+                buscarYRutaDesdeBackend(place.name); // ← recién aquí traza ruta
+              }
+            }}
             disabled={!routeAvailable}
             className={
               "rounded-xl px-4 py-2 font-semibold " +
