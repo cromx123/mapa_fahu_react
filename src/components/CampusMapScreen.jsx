@@ -56,6 +56,17 @@ function MyLocationMarker({ coord }) {
   );
 }
 
+function FlyToPoint({ coord }) {
+  const map = useMap();
+  useEffect(() => {
+    if (coord) {
+      map.flyTo(coord, 19, { duration: 0.8 });
+    }
+  }, [coord, map]);
+  return null;
+}
+
+
 function ControlBar({ setUserCoord }) {
   const map = useMap();
 
@@ -145,6 +156,7 @@ export default function CampusMapScreen() {
     headingRadRef,
     estPosRef,
     offsetMeters,
+    focusCoord,
   } = useCampusMap();
 
   const inputRef = useRef(null);
@@ -177,15 +189,32 @@ export default function CampusMapScreen() {
     icon: "#9CA3AF",
   };
 
-  // Filtros rápidos como en Flutter
-  const filters = [
-    { label: "Bibliotecas", query: "biblioteca" },
-    { label: "Casinos", query: "casino" },
-    { label: "Kioscos", query: "kiosko" },
-    { label: "Baños", query: "baño" },
-    { label: "Salas", query: "sala" },
-    { label: "Otros", query: "otros" },
-  ];
+  // Filtros
+const filters = [
+  { label: "Bibliotecas", query: "biblioteca", category: "type" },
+  { label: "Casinos", query: "casino", category: "type" },
+  { label: "Kioscos", query: "kiosko", category: "type" },
+  { label: "Baños", query: "baño", category: "type" },
+  { label: "Salas", query: "sala", category: "type" },
+  { label: "Deportes", query: "deporte", category: "type" },
+  { label: "Laboratorios", query: "laboratorio", category: "type" },
+  { label: "Auditorios", query: "auditorio", category: "type" },
+  { label: "Estacionamientos", query: "estacionamiento", category: "type" },
+  { label: "Bebederos", query: "bebedero", category: "type" },
+  { label: "Facultades", query: "facultad", category: "facultad" },
+  { label: "Departamentos", query: "departamento", category: "type" },
+
+  // Sectores 👇
+  { label: "Sector 1", query: "1", category: "sector" },
+  { label: "Sector 2", query: "2", category: "sector" },
+  { label: "Sector 3", query: "3", category: "sector" },
+  { label: "Sector 4", query: "4", category: "sector" },
+  { label: "Sector 5", query: "5", category: "sector" },
+  { label: "Sector 6", query: "6", category: "sector" },
+  { label: "Sector 7", query: "7", category: "sector" },
+  { label: "Sector 8", query: "8", category: "sector" },
+];
+
 
   const lastPosRef = useRef(null);
   const [speedMps, setSpeedMps] = useState(0);
@@ -270,13 +299,14 @@ export default function CampusMapScreen() {
             center={INITIAL_CENTER}
             zoom={INITIAL_ZOOM}
             minZoom={1}
-            maxZoom={25}
+            maxZoom={19}
             zoomControl={false}
             className="h-full w-full z-0"
           >
             <TileLayer
               url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
               maxNativeZoom={19}
+              maxZoom={22}
               attribution='&copy; OpenStreetMap contributors'
             />
 
@@ -297,30 +327,58 @@ export default function CampusMapScreen() {
             speedMps={speedMps}
             />
 
+            <FlyToPoint coord={focusCoord} />
 
-            {markers.map((m) => {
-              let icon = nodeIcons.default;
+            {markers
+              .filter((m) => m.type?.toLowerCase() !== "camino")
+              .map((m) => {
+                let icon = nodeIcons.default;
 
-              if (m.type?.toLowerCase() === "deporte") {
-                // Elige según el nombre del nodo
-                const nombre = m.name?.toLowerCase().replace(/\s*usach\s*/g, "").trim();
-                icon = nodeIcons.deporte[nombre] || nodeIcons.default;
-              } else {
-                icon = nodeIcons[m.type?.toLowerCase()] || nodeIcons.default;
-              }
+                if (m.type?.toLowerCase() === "deporte") {
+                  const nombre = m.name?.toLowerCase().replace(/\s*usach\s*/g, "").trim();
+                  icon = nodeIcons.deporte[nombre] || nodeIcons.default;
+                } else if(m.type?.toLowerCase() === "estructuras"){
+                  const nombre = m.name?.toLowerCase().trim();
+                  icon = nodeIcons.estructuras[nombre] || nodeIcons.estructuras["default"] || nodeIcons.default;
+                } else {
+                  icon = nodeIcons[m.type?.toLowerCase()] || nodeIcons.default;
+                }
 
-              return (
-                <Marker
-                  key={m.id}
-                  position={[m.lat, m.lng]}
-                  icon={icon}
-                >
-                  <Popup>
-                    <div className="font-semibold">{m.name}</div>
-                    <div className="text-xs text-gray-600">{m.type}</div>
-                  </Popup>
-                </Marker>
-              );
+                return (
+                  <Marker
+                    key={m.id}
+                    position={[m.lat, m.lng]}
+                    icon={icon}
+                  >
+                    <Popup>
+                      <div className="font-semibold">{m.name}</div>
+                      <div className="text-xs text-gray-600 mb-2">{m.type}</div>
+                      
+                      <div className="flex gap-2">
+                        {/* Botón de información */}
+                        <button
+                          onClick={() => {
+                            onMarkerClick(m);   // esto abre el PlaceInfoCard con más detalles
+                          }}
+                          className="px-2 py-1 text-xs rounded bg-gray-200 hover:bg-gray-300"
+                        >
+                          Info
+                        </button>
+
+                        {/* Botón de iniciar ruta */}
+                        <button
+                          onClick={() => {
+                            buscarYRutaDesdeBackend(m.name); // traza la ruta
+                          }}
+                          className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                          Iniciar
+                        </button>
+                      </div>
+                    </Popup>
+
+                  </Marker>
+                );
             })}
 
             {/* NUEVO: barra de controles unificada */}
@@ -437,9 +495,14 @@ export default function CampusMapScreen() {
                         onClick={() => {
                           const next = active ? null : f.query;
                           setSelectedFilter(next);
-                          const text = next || "";
-                          setQuery(text);
-                          mostrarBusqueda(text);
+
+                          if (next) {
+                            setQuery(next);
+                            mostrarBusqueda(next, f.category);  // 👈 le pasamos también la categoría
+                          } else {
+                            setQuery("");
+                            mostrarBusqueda(""); // limpia
+                          }
                         }}
                         className={
                           "px-3 py-1 rounded-2xl border text-sm " +
@@ -499,9 +562,18 @@ function PlaceInfoCard({
       {place?.description && (
         <p className="mt-2 text-sm text-gray-700">{place.description}</p>
       )}
-      {place?.lat != null && place?.lng != null && (
-        <div className="mt-2 text-xs text-gray-500">
-          Lat: {place.lat?.toFixed?.(6)} · Lng: {place.lng?.toFixed?.(6)}
+      {(place?.sector || place?.floor) && (
+        <div className="mt-2 text-sm">
+          {place?.sector && (
+            <span className="inline-block mr-2 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs border border-blue-200">
+              Sector: {place.sector}
+            </span>
+          )}
+          {place?.floor && (
+            <span className="inline-block rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-xs border border-emerald-200">
+              Piso: {place.floor}
+            </span>
+          )}
         </div>
       )}
 

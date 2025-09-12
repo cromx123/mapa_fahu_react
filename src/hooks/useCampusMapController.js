@@ -141,7 +141,9 @@ export default function useCampusMapController() {
       const q = (texto ?? "").trim();
       if (!q) return;
 
-      const r1 = await fetch(`${BASE_URL}/destinos?query=${encodeURIComponent(q)}`);
+      const r1 = await fetch(
+        `${BASE_URL}/destinos?query=${encodeURIComponent(q)}&category=name`
+      );
       if (!r1.ok) return;
       const j1 = await r1.json();
       const item = j1?.items?.[0];
@@ -153,14 +155,14 @@ export default function useCampusMapController() {
         type: item.tipo || "",
         sector: item.sector || "",
         floor: item.nivel || "",
-        lat: item.lat,
-        lng: item.lng,
+        lat: item.lat, lng: item.lng,
       };
 
+      setFocusCoord({ lat: dest.lat, lng: dest.lng });
       setSelectedPlace(dest);
       setIsInfoCardVisible(true);
       setMarkers([{ id: dest.id, name: dest.name, type: dest.type, lat: dest.lat, lng: dest.lng }]);
-      setRoutePoints([]); // ← aún no trazamos la ruta
+      setRoutePoints([]); // aún sin ruta
     } catch (e) {
       console.error(e);
     }
@@ -172,8 +174,10 @@ export default function useCampusMapController() {
       const q = (texto ?? "").trim();
       if (!q) return;
 
-      // 1) /destinos?query=...
-      const r1 = await fetch(`${BASE_URL}/destinos?query=${encodeURIComponent(q)}`);
+      // 1) Buscar por nombre (category=name)
+      const r1 = await fetch(
+        `${BASE_URL}/destinos?query=${encodeURIComponent(q)}&category=name`
+      );
       if (!r1.ok) return;
       const j1 = await r1.json();
       const item = j1?.items?.[0];
@@ -185,74 +189,68 @@ export default function useCampusMapController() {
         type: item.tipo || "",
         sector: item.sector || "",
         floor: item.nivel || "",
-        lat: item.lat,
-        lng: item.lng,
+        lat: item.lat, lng: item.lng,
       };
 
-      // 2) obtener posición actual (o última conocida)
+      // 2) Posición y 3) Ruta exactamente igual que ya lo tenías…
       const pos = await getUserPosition();
       if (!pos) return;
       userPosRef.current = pos;
       setUserCoord({ lat: pos.lat, lng: pos.lng });
       if (!estPosRef.current) estPosRef.current = [pos.lat, pos.lng];
 
-      // 3) /ruta_desde_ubicacion?lat=..&lng=..&destino=id
-      const r2 = await fetch(`${BASE_URL}/ruta_desde_ubicacion?lat=${pos.lat}&lng=${pos.lng}&destino=${encodeURIComponent(dest.id)}`);
-      if (!r2.ok) {
-        setRoutePoints([]);
-        return;
-      }
+      const r2 = await fetch(
+        `${BASE_URL}/ruta_desde_ubicacion?lat=${pos.lat}&lng=${pos.lng}&destino=${encodeURIComponent(dest.id)}`
+      );
+      if (!r2.ok) { setRoutePoints([]); return; }
       const j2 = await r2.json();
       const ruta = (j2.ruta || []).map((p) => [p.lat, p.lng]);
       setRoutePoints(ruta);
       setSelectedPlace(dest);
       setIsInfoCardVisible(true);
-      setMarkers(() => {
-        const arr = [];
-        if (ruta.length > 0) {
-          const [dlat, dlng] = ruta[ruta.length - 1];
-          arr.push({ id: dest.id, name: dest.name, type: dest.type, lat: dlat, lng: dlng });
-        }
-        return arr;
-      });
+      setMarkers(ruta.length ? [{ id: dest.id, name: dest.name, type: dest.type, lat: ruta.at(-1)[0], lng: ruta.at(-1)[1] }] : []);
 
-      // Distancia/ETA (5 km/h)
       const dist = Number(j2.distancia_total_metros ?? j2.distancia_m ?? 0);
-      const km = dist / 1000;
-      const velocidadKmH = 5.0;
-      const horas = km / velocidadKmH;
-      const minutos = horas * 60.0;
-      setDistanciaM(dist);
-      setTiempoMin(minutos);
-      setEtaDate(new Date(Date.now() + Math.round(minutos) * 60 * 1000));
-      setFollowUser(true);
-      setIsNavigationActive(true);
-    } catch (e) {
-      // silencioso
-    }
+      const km = dist / 1000, min = (km / 5) * 60;
+      setDistanciaM(dist); setTiempoMin(min);
+      setEtaDate(new Date(Date.now() + Math.round(min) * 60 * 1000));
+      setFollowUser(true); setIsNavigationActive(true);
+    } catch {}
   }, []);
 
+
   // ---- Mostrar búsqueda: solo marcadores desde backend ----
-  const mostrar_busqueda = useCallback(async (texto) => {
+  const mostrar_busqueda = useCallback(async (texto, category = "type") => {
     try {
       const q = (texto ?? "").trim();
-      const r = await fetch(`${BASE_URL}/destinos?query=${encodeURIComponent(q)}`);
+      if (!q) {
+        setMarkers([]);
+        return;
+      }
+
+      const r = await fetch(`${BASE_URL}/destinos?query=${encodeURIComponent(q)}&category=${category}`);
       if (!r.ok) return;
+
       const j = await r.json();
       const items = Array.isArray(j?.items) ? j.items : [];
       const list = items
-        .map((l) => {
-          const lat = Number(l.lat);
-          const lng = Number(l.lng);
-          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-          return { id: l.id, name: l.nombre, type: l.tipo, lat, lng };
-        })
-        .filter(Boolean);
+        .map((l) => ({
+          id: l.id,
+          name: l.nombre,
+          type: l.tipo,
+          lat: Number(l.lat),
+          lng: Number(l.lng),
+        }))
+        .filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lng));
+
       setMarkers(list);
       setRoutePoints([]);
       setIsInfoCardVisible(false);
-    } catch {}
+    } catch (e) {
+      console.error("Error en mostrarBusqueda:", e);
+    }
   }, []);
+
   const mostrarBusqueda = mostrar_busqueda;
 
   // ---- Seguimiento/posición/heading (Web APIs) ----
@@ -408,6 +406,7 @@ export default function useCampusMapController() {
     setFollowUser(false);
   }, []);
 
+  const [focusCoord, setFocusCoord] = useState(null);
 
   return {
     // estado
@@ -446,5 +445,6 @@ export default function useCampusMapController() {
     estPosRef,
     headingRadRef,
     offsetMeters,
+    focusCoord,
   };
 }
