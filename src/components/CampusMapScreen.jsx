@@ -190,30 +190,84 @@ export default function CampusMapScreen() {
   };
 
   // Filtros
-const filters = [
-  { label: "Bibliotecas", query: "biblioteca", category: "type" },
-  { label: "Casinos", query: "casino", category: "type" },
-  { label: "Kioscos", query: "kiosko", category: "type" },
-  { label: "Baños", query: "baño", category: "type" },
-  { label: "Salas", query: "sala", category: "type" },
-  { label: "Deportes", query: "deporte", category: "type" },
-  { label: "Laboratorios", query: "laboratorio", category: "type" },
-  { label: "Auditorios", query: "auditorio", category: "type" },
-  { label: "Estacionamientos", query: "estacionamiento", category: "type" },
-  { label: "Bebederos", query: "bebedero", category: "type" },
-  { label: "Facultades", query: "facultad", category: "facultad" },
-  { label: "Departamentos", query: "departamento", category: "type" },
+  const filters = [
+    { label: "Bibliotecas", query: "biblioteca", category: "type" },
+    { label: "Casinos", query: "casino", category: "type" },
+    { label: "Kioscos", query: "kiosko", category: "type" },
+    { label: "Baños", query: "baño", category: "type" },
+    { label: "Salas", query: "sala", category: "type" },
+    { label: "Deportes", query: "deporte", category: "type" },
+    { label: "Laboratorios", query: "laboratorio", category: "type" },
+    { label: "Auditorios", query: "auditorio", category: "type" },
+    { label: "Estacionamientos", query: "estacionamiento", category: "type" },
+    { label: "Bebederos", query: "bebedero", category: "type" },
+    { label: "Facultades", query: "facultad", category: "facultad" },
+    { label: "Departamentos", query: "departamento", category: "type" },
 
-  // Sectores 👇
-  { label: "Sector 1", query: "1", category: "sector" },
-  { label: "Sector 2", query: "2", category: "sector" },
-  { label: "Sector 3", query: "3", category: "sector" },
-  { label: "Sector 4", query: "4", category: "sector" },
-  { label: "Sector 5", query: "5", category: "sector" },
-  { label: "Sector 6", query: "6", category: "sector" },
-  { label: "Sector 7", query: "7", category: "sector" },
-  { label: "Sector 8", query: "8", category: "sector" },
-];
+    // Sectores 👇
+    { label: "Sector 1", query: "1", category: "sector" },
+    { label: "Sector 2", query: "2", category: "sector" },
+    { label: "Sector 3", query: "3", category: "sector" },
+    { label: "Sector 4", query: "4", category: "sector" },
+    { label: "Sector 5", query: "5", category: "sector" },
+    { label: "Sector 6", query: "6", category: "sector" },
+    { label: "Sector 7", query: "7", category: "sector" },
+    { label: "Sector 8", query: "8", category: "sector" },
+  ];
+  const [showAllFilters, setShowAllFilters] = useState(false);
+  const orderedFilters = useMemo(() => {
+    if (!selectedFilter) return filters;
+    // mover el filtro seleccionado al inicio
+    const sel = filters.find((f) => f.query === selectedFilter);
+    const rest = filters.filter((f) => f.query !== selectedFilter);
+    return sel ? [sel, ...rest] : filters;
+  }, [filters, selectedFilter]);
+
+  const startVoiceSearch = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta búsqueda por voz");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-ES";
+    recognition.interimResults = true;   // 👈 permite resultados parciales
+    recognition.continuous = true;      // se detiene cuando el usuario deja de hablar
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setQuery("🎤 Escuchando...");
+    };
+
+    recognition.onresult = (event) => {
+      let texto = "";
+      for (let i = 0; i < event.results.length; i++) {
+        texto += event.results[i][0].transcript + " ";
+      }
+      setQuery(texto.trim());  
+      // Cuando termina la frase (isFinal)
+      if (event.results[event.results.length - 1].isFinal) {
+        buscarDestino(texto.trim());  // dispara búsqueda final
+        setOpenSugg(false);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Error en reconocimiento de voz:", event.error);
+      alert("Error en búsqueda por voz: " + event.error);
+    };
+
+    recognition.onend = () => {
+      console.log("🎤 Reconocimiento terminado");
+    };
+
+    recognition.start();
+  };
+
+
 
 
   const lastPosRef = useRef(null);
@@ -435,10 +489,11 @@ const filters = [
                     type="button"
                     className="px-2 py-1 rounded-lg hover:bg-gray-100"
                     title="Búsqueda por voz"
-                    onClick={() => alert("Mic placeholder.")}
+                    onClick={startVoiceSearch}   
                   >
                     🎤
                   </button>
+
                   <button
                     type="button"
                     className="px-2 py-1 rounded-lg hover:bg-gray-100"
@@ -484,10 +539,10 @@ const filters = [
                 )}
               </div>
 
-              {/* Filtros*/}
+              {/* Filtros */}
               <div className="w-full md:flex-1">
                 <div className="flex flex-wrap gap-2 overflow-x-auto md:overflow-visible">
-                  {filters.map((f) => {
+                  {(showAllFilters ? orderedFilters : orderedFilters.slice(0, 4)).map((f) => {
                     const active = selectedFilter === f.query;
                     return (
                       <button
@@ -498,11 +553,12 @@ const filters = [
 
                           if (next) {
                             setQuery(next);
-                            mostrarBusqueda(next, f.category);  // 👈 le pasamos también la categoría
+                            mostrarBusqueda(next, f.category);
                           } else {
                             setQuery("");
-                            mostrarBusqueda(""); // limpia
+                            mostrarBusqueda("");
                           }
+                          setShowAllFilters(false); // cerrar lista al seleccionar
                         }}
                         className={
                           "px-3 py-1 rounded-2xl border text-sm " +
@@ -515,6 +571,14 @@ const filters = [
                       </button>
                     );
                   })}
+
+                  {/* Botón extra: ... o – */}
+                  <button
+                    onClick={() => setShowAllFilters((v) => !v)}
+                    className="px-3 py-1 rounded-2xl border text-sm bg-white text-gray-800 border-gray-300"
+                  >
+                    {showAllFilters ? "–" : "..."}
+                  </button>
                 </div>
               </div>
             </div>
