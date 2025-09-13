@@ -15,7 +15,7 @@ import useCampusMap from "../hooks/useCampusMapController";
 import CameraFollow from "./CameraFollow";
 import HeadingLocationMarkerLion from "./HeadingLocationMarker";
 import DrawerMenu from "./DrawerMenu"; 
-
+import { useAppSettings } from "../context/SettingsContext";
 
 
 // Fix de iconos Leaflet (CRA)
@@ -163,56 +163,33 @@ export default function CampusMapScreen() {
   const [openSugg, setOpenSugg] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
   const isLargeScreen = useMemo(() => window.innerWidth > 800, []);
-
+  const { t } = useAppSettings();
   // ⟵⟵⟵ NUEVO: estado del Drawer
   const [openMenu, setOpenMenu] = useState(false);
 
-  // ⟵⟵⟵ NUEVO: función de i18n simple (reemplaza por tu i18n real)
-  const t = (k) =>
-    ({
-      ms_menuTitle: "Menú",
-      ms_login: "Iniciar sesión",
-      ms_portalUsach: "Portal USACH",
-      ms_portalFahu: "Portal FAHU",
-      ms_portalAlumnos: "Portal Alumnos",
-      ms_onlineServices: "Servicios en línea",
-      ms_onlineLibrary: "Biblioteca en línea",
-      ms_settings: "Configuración",
-    }[k] || k);
-
-  // ⟵⟵⟵ NUEVO: tema (azul/naranjo USACH). Ajusta si usas modo claro/oscuro.
-  const drawerTheme = {
-    primary: "#003B71",
-    accent: "#E77500",
-    surface: "#0B0F14",   // panel
-    text: "#E5E7EB",
-    icon: "#9CA3AF",
-  };
-
   // Filtros
   const filters = [
-    { label: "Bibliotecas", query: "biblioteca", category: "type" },
-    { label: "Casinos", query: "casino", category: "type" },
-    { label: "Kioscos", query: "kiosko", category: "type" },
-    { label: "Baños", query: "baño", category: "type" },
-    { label: "Salas", query: "sala", category: "type" },
-    { label: "Deportes", query: "deporte", category: "type" },
-    { label: "Laboratorios", query: "laboratorio", category: "type" },
-    { label: "Auditorios", query: "auditorio", category: "type" },
-    { label: "Estacionamientos", query: "estacionamiento", category: "type" },
-    { label: "Bebederos", query: "bebedero", category: "type" },
-    { label: "Facultades", query: "facultad", category: "facultad" },
-    { label: "Departamentos", query: "departamento", category: "type" },
+    { label: t("cms_filterLibraries"), query: "biblioteca", category: "type" },
+    { label: t("cms_filterCasinos"), query: "casino", category: "type" },
+    { label: t("cms_filterKiosks"), query: "kiosko", category: "type" },
+    { label: t("cms_filterBathrooms"), query: "baño", category: "type" },
+    { label: t("cms_filterRooms"), query: "sala", category: "type" },
+    { label: t("cms_filterSports"), query: "deporte", category: "type" },
+    { label: t("cms_filterLabs"), query: "laboratorio", category: "type" },
+    { label: t("cms_filterAuditoriums"), query: "auditorio", category: "type" },
+    { label: t("cms_filterParking"), query: "estacionamiento", category: "type" },
+    { label: t("cms_filterFountains"), query: "bebedero", category: "type" },
+    { label: t("cms_filterFaculties"), query: "facultad", category: "facultad" },
+    { label: t("cms_filterDepartments"), query: "departamento", category: "type" },
 
-    // Sectores 👇
-    { label: "Sector 1", query: "1", category: "sector" },
-    { label: "Sector 2", query: "2", category: "sector" },
-    { label: "Sector 3", query: "3", category: "sector" },
-    { label: "Sector 4", query: "4", category: "sector" },
-    { label: "Sector 5", query: "5", category: "sector" },
-    { label: "Sector 6", query: "6", category: "sector" },
-    { label: "Sector 7", query: "7", category: "sector" },
-    { label: "Sector 8", query: "8", category: "sector" },
+    { label: t("cms_filterSector1"), query: "1", category: "sector" },
+    { label: t("cms_filterSector2"), query: "2", category: "sector" },
+    { label: t("cms_filterSector3"), query: "3", category: "sector" },
+    { label: t("cms_filterSector4"), query: "4", category: "sector" },
+    { label: t("cms_filterSector5"), query: "5", category: "sector" },
+    { label: t("cms_filterSector6"), query: "6", category: "sector" },
+    { label: t("cms_filterSector7"), query: "7", category: "sector" },
+    { label: t("cms_filterSector8"), query: "8", category: "sector" },
   ];
   const [showAllFilters, setShowAllFilters] = useState(false);
   const orderedFilters = useMemo(() => {
@@ -416,7 +393,7 @@ export default function CampusMapScreen() {
                           }}
                           className="px-2 py-1 text-xs rounded bg-gray-200 hover:bg-gray-300"
                         >
-                          Info
+                          {t("cms_btn_info")}
                         </button>
 
                         {/* Botón de iniciar ruta */}
@@ -426,7 +403,7 @@ export default function CampusMapScreen() {
                           }}
                           className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700"
                         >
-                          Iniciar
+                          {t("cms_btn_start")}
                         </button>
                       </div>
                     </Popup>
@@ -479,7 +456,7 @@ export default function CampusMapScreen() {
                       }}
                       onFocus={() => setOpenSugg(true)}
                       onBlur={() => setTimeout(() => setOpenSugg(false), 120)} // deja hacer click
-                      placeholder="Buscar sala/edificio…"
+                      placeholder={t("cms_searchHint")}
                       className="w-full h-full outline-none bg-transparent"
                     />
                   </form>
@@ -601,6 +578,8 @@ function PlaceInfoCard({
   distanciaLabel,
   etaLabel,
 }) {
+  const { t } = useAppSettings();
+
   if (!place && !routeAvailable) return null;
 
   return (
@@ -618,7 +597,7 @@ function PlaceInfoCard({
           className="text-sm rounded-lg border px-3 py-1.5 bg-white hover:bg-gray-50"
           title="Borrar búsqueda"
         >
-          Cerrar
+        {t("cms_btn_close")}
         </button>
       </div>
 
@@ -656,7 +635,7 @@ function PlaceInfoCard({
               onClick={onStop}
               className="rounded-xl px-4 py-2 bg-red-600 text-white font-semibold hover:bg-red-700"
             >
-              Salir
+              {t("cms_btn_exit")}
             </button>
           </div>
         </div>
@@ -677,7 +656,7 @@ function PlaceInfoCard({
             }
             title="Iniciar ruta"
           >
-            Iniciar
+            {t("cms_btn_start")}
           </button>
         </div>
       )}

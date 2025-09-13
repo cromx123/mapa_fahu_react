@@ -1,5 +1,6 @@
 // src/hooks/useCampusMapController.js
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAppSettings } from "../context/SettingsContext";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL; // <- tu backend
 
@@ -33,6 +34,8 @@ export default function useCampusMapController() {
   const [distanciaM, setDistanciaM] = useState(0);
   const [tiempoMin, setTiempoMin] = useState(0);
   const [etaDate, setEtaDate]     = useState(null);
+  const { unit } = useAppSettings();
+
 
   // ---- Utilidades geométricas ----
   const toMetersX = (lon, latRef) => lon * 111320.0 * Math.cos((latRef * Math.PI) / 180.0);
@@ -323,7 +326,7 @@ export default function useCampusMapController() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [followUser, isNavigationActive, routePoints, selectedPlace?.id]);
 
-  // ---- API públicas (como en tu controlador) ----
+  // ---- API públicas ----
   const moveToUserLocation = useCallback(() => {
     // lo maneja el componente con map.flyTo(userPosRef.current)
     // este método solo existe por paridad
@@ -374,9 +377,18 @@ export default function useCampusMapController() {
   }, [etaDate, tiempoMin]);
 
   const distanciaLabel = useMemo(() => {
-    if (distanciaM >= 1000) return `${(distanciaM / 1000).toFixed(1)} km`;
-    return `${Math.round(distanciaM)} m`;
-  }, [distanciaM]);
+    if (unit === "miles") {
+      const miles = distanciaM / 1609.34;
+      return miles >= 0.1
+        ? `${miles.toFixed(2)} mi`
+        : `${(miles * 5280).toFixed(0)} ft`;
+    } else {
+      // default: metros
+      if (distanciaM >= 1000) return `${(distanciaM / 1000).toFixed(1)} km`;
+      return `${Math.round(distanciaM)} m`;
+    }
+  }, [distanciaM, unit]);
+
 
   const etaLabel = useMemo(() => {
     const d = etaDate || new Date(Date.now() + Math.round(tiempoMin) * 60 * 1000);
