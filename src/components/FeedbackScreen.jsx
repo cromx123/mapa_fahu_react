@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from "react";
+// src/components/FeedbackScreen.jsx
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAppSettings } from "../context/SettingsContext";
 
-/* ========== BottomSheet genérico ========== */
+/* ========== Generic BottomSheet ========== */
 function BottomSheet({ open, onClose, title, children }) {
   if (!open) return null;
   return (
@@ -9,84 +11,65 @@ function BottomSheet({ open, onClose, title, children }) {
       {/* backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       {/* sheet */}
-      <div className="relative w-full rounded-t-2xl bg-white shadow-xl p-4 pb-6 max-h-[85vh] overflow-auto animate-[slideUp_.18s_ease-out]">
+      <div className="relative w-full rounded-t-2xl bg-white dark:bg-gray-800 shadow-xl p-4 pb-6 max-h-[85vh] overflow-auto animate-[slideUp_.18s_ease-out]">
         {title && (
-          <div className="text-center text-gray-800 font-semibold mb-2">
+          <div className="text-center text-gray-800 dark:text-gray-100 font-semibold mb-2">
             {title}
           </div>
         )}
         {children}
       </div>
       <style>{`
-        @keyframes slideUp { from { transform: translateY(16px); opacity: .98 } to { transform: translateY(0); opacity: 1 } }
+        @keyframes slideUp {
+          from { transform: translateY(16px); opacity: .98 }
+          to   { transform: translateY(0);     opacity: 1 }
+        }
       `}</style>
     </div>
   );
 }
 
-/* ========== Acordeón simple (FAQ) ========== */
+/* ========== Simple Accordion (FAQ) ========== */
 function Accordion({ title, children }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded-lg overflow-hidden border-gray-200 dark:border-gray-700">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100"
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
       >
-        <span className="text-gray-800">{title}</span>
+        <span className="text-gray-800 dark:text-gray-100">{title}</span>
         <span className="text-gray-500">{open ? "−" : "+"}</span>
       </button>
-      {open && <div className="px-4 py-3 text-sm text-gray-700">{children}</div>}
+      {open && (
+        <div className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
 
-/* ========== Pantalla principal ========== */
-export default function SugerenciasScreen() {
-  // i18n mínimo (sustituye por tu sistema real)
-  const t = useMemo(
-    () => ({
-      cs_feedback: "Sugerencias",
-      fs_feedbackThankYou: "¡Gracias por tu sugerencia!",
-      fs_feedbackName: "Nombre",
-      fs_feedbackNameRequired: "Por favor ingresa tu nombre",
-      fs_feedbackEmail: "Email",
-      fs_feedbackEmailRequired: "Por favor ingresa tu email",
-      fs_feedbackEmailInvalid: "Email no válido",
-      fs_feedbackMessage: "Mensaje",
-      fs_feedbackMessageRequired: "Por favor ingresa tu mensaje",
-      fs_feedbackMessageTooShort: "Mínimo 10 caracteres",
-      fs_feedbackSubmit: "Enviar",
-      fs_feedbackFrequentQuestions: "Preguntas frecuentes",
-      fs_close: "Cerrar",
-      fs_faqQuestion1: "¿Cómo se usa la app?",
-      fs_faqAnswer1:
-        "Puedes buscar salas/edificios, ver rutas y activar la navegación paso a paso.",
-      fs_faqQuestion2: "¿Cómo reporto un error en el mapa?",
-      fs_faqAnswer2:
-        "Desde el menú de feedback envíanos el detalle (lugar, horario, captura).",
-    }),
-    []
-  );
+/* ========== Main Screen ========== */
+export default function FeedbackScreen() {
+  const { t } = useAppSettings(); // 🔑 importamos traducciones del contexto
+  const navigate = useNavigate();
 
-  // estado del form
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
-
-  // errores
   const [errors, setErrors] = useState({});
   const [faqOpen, setFaqOpen] = useState(false);
 
   const validate = () => {
     const next = {};
-    if (!name.trim()) next.name = t.fs_feedbackNameRequired;
-    if (!email.trim()) next.email = t.fs_feedbackEmailRequired;
+    if (!name.trim()) next.name = t("fs_feedbackNameRequired");
+    if (!email.trim()) next.email = t("fs_feedbackEmailRequired");
     else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/i.test(email.trim()))
-      next.email = t.fs_feedbackEmailInvalid;
-    if (!message.trim()) next.message = t.fs_feedbackMessageRequired;
+      next.email = t("fs_feedbackEmailInvalid");
+    if (!message.trim()) next.message = t("fs_feedbackMessageRequired");
     else if (message.trim().length < 10)
-      next.message = t.fs_feedbackMessageTooShort;
+      next.message = t("fs_feedbackMessageTooShort");
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -94,47 +77,49 @@ export default function SugerenciasScreen() {
   const onSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    // aquí enviarías al backend
-    alert(t.fs_feedbackThankYou);
-    // limpiar o navegar
+    alert(t("fs_feedbackThankYou"));
     setName("");
     setEmail("");
     setMessage("");
   };
 
-  const navigate = useNavigate();
-
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gray-50">
+    <div className="min-h-screen w-full flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {/* AppBar */}
       <header className="px-4 py-3 bg-teal-700 text-white text-lg font-bold shadow">
         <button
           onClick={() => navigate(-1)}
           className="mr-3 text-xl hover:text-gray-200"
         >
-          ← 
-        </button>  {/*Cambiar el icono por <*/}
-        {t.cs_feedback}
+          ←
+        </button>
+        {t("cs_feedback")}
       </header>
 
-      {/* Contenido */}
+      {/* Content */}
       <div className="flex-1 p-4">
         <form
           onSubmit={onSubmit}
-          className="max-w-xl mx-auto bg-white rounded-xl shadow border p-4 space-y-4"
+          className="max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 p-4 space-y-4"
         >
-          {/* Nombre */}
+          {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.fs_feedbackName}
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t("fs_feedbackName")}
             </label>
-            <div className="flex items-center gap-2">
+            <div
+              className={`flex items-center gap-2 border rounded-md px-3 py-2 bg-gray-50 dark:bg-gray-700 ${
+                errors.name
+                  ? "border-rose-400"
+                  : "border-gray-300 dark:border-gray-600"
+              }`}
+            >
               <span className="text-gray-500">👤</span>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="flex-1 border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-teal-600"
-                placeholder={t.fs_feedbackName}
+                className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100"
+                placeholder={t("fs_feedbackName")}
               />
             </div>
             {errors.name && (
@@ -144,17 +129,23 @@ export default function SugerenciasScreen() {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.fs_feedbackEmail}
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t("fs_feedbackEmail")}
             </label>
-            <div className="flex items-center gap-2">
+            <div
+              className={`flex items-center gap-2 border rounded-md px-3 py-2 bg-gray-50 dark:bg-gray-700 ${
+                errors.email
+                  ? "border-rose-400"
+                  : "border-gray-300 dark:border-gray-600"
+              }`}
+            >
               <span className="text-gray-500">✉️</span>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-teal-600"
-                placeholder="nombre@dominio.com"
+                className="flex-1 bg-transparent outline-none text-gray-900 dark:text-gray-100"
+                placeholder="name@domain.com"
               />
             </div>
             {errors.email && (
@@ -162,62 +153,58 @@ export default function SugerenciasScreen() {
             )}
           </div>
 
-          {/* Mensaje */}
+          {/* Message */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.fs_feedbackMessage}
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {t("fs_feedbackMessage")}
             </label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={5}
-              className="w-full border rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-teal-600"
-              placeholder={t.fs_feedbackMessage}
+              className="w-full border rounded-md px-3 py-2 outline-none bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-600"
+              placeholder={t("fs_feedbackMessage")}
             />
             {errors.message && (
               <div className="mt-1 text-sm text-red-600">{errors.message}</div>
             )}
           </div>
 
-          {/* Botones */}
+          {/* Buttons */}
           <div className="flex items-center gap-3 pt-2">
             <button
               type="submit"
               className="rounded-md px-4 py-2 bg-teal-600 text-white font-semibold hover:bg-teal-700"
             >
-              {t.fs_feedbackSubmit}
+              {t("fs_feedbackSubmit")}
             </button>
             <button
               type="button"
               onClick={() => setFaqOpen(true)}
-              className="text-teal-700 hover:underline"
+              className="text-teal-700 dark:text-teal-400 hover:underline"
             >
-              {t.fs_feedbackFrequentQuestions}
+              {t("fs_feedbackFrequentQuestions")}
             </button>
           </div>
         </form>
       </div>
 
-      {/* Bottom sheet: Preguntas Frecuentes */}
+      {/* Bottom sheet: FAQ */}
       <BottomSheet
         open={faqOpen}
         onClose={() => setFaqOpen(false)}
-        title={t.fs_feedbackFrequentQuestions}
+        title={t("fs_feedbackFrequentQuestions")}
       >
         <div className="space-y-3">
-          <Accordion title={t.fs_faqQuestion1}>
-            {t.fs_faqAnswer1}
-          </Accordion>
-          <Accordion title={t.fs_faqQuestion2}>
-            {t.fs_faqAnswer2}
-          </Accordion>
+          <Accordion title={t("fs_faqQuestion1")}>{t("fs_faqAnswer1")}</Accordion>
+          <Accordion title={t("fs_faqQuestion2")}>{t("fs_faqAnswer2")}</Accordion>
 
           <div className="pt-3 text-center">
             <button
               onClick={() => setFaqOpen(false)}
-              className="rounded-md border px-4 py-2 hover:bg-gray-50"
+              className="rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              {t.fs_close}
+              {t("fs_close")}
             </button>
           </div>
         </div>
