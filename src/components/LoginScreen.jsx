@@ -11,7 +11,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const [errors, setErrors] = useState({ email: "", pwd: "" });
-  const [snack, setSnack] = useState(""); // Snack/alert suave
+  const [snack, setSnack] = useState("");
 
   const validate = () => {
     let ok = true;
@@ -42,12 +42,10 @@ export default function LoginScreen() {
     if (!validate()) return;
 
     setLoading(true);
-    // Simulación de API (2s)
     await new Promise((r) => setTimeout(r, 2000));
     setLoading(false);
 
     setSnack(`Bienvenido ${email}`);
-    // Snack se oculta después de 2.5s y navega
     setTimeout(() => {
       setSnack("");
       navigate("/solicitudes_screen", { replace: true });
@@ -55,9 +53,9 @@ export default function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-white text-gray-900">
+    <div className="min-h-screen w-full bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       <div className="mx-auto max-w-xl px-6 py-10">
-        {/* Icono grande */}
+        {/* Icono */}
         <div className="flex justify-center">
           <div className="w-24 h-24 rounded-full bg-emerald-500 text-white grid place-items-center text-6xl">
             <span className="leading-none">👤</span>
@@ -72,16 +70,17 @@ export default function LoginScreen() {
           {/* Email */}
           <div>
             <div
-              className={`flex items-center gap-2 rounded-md border px-3 py-2 bg-purple-50/40 ${
-                errors.email ? "border-rose-400" : "border-purple-200"
-              }`}
+              className={`flex items-center gap-2 rounded-md border px-3 py-2 
+                bg-purple-50/40 dark:bg-gray-800
+                ${errors.email ? "border-rose-400" : "border-purple-200 dark:border-gray-700"}
+              `}
             >
-              <span className="text-gray-700">✉️</span>
+              <span className="text-gray-700 dark:text-gray-300">✉️</span>
               <input
                 type="email"
                 autoComplete="email"
                 placeholder="Email"
-                className="w-full bg-transparent outline-none"
+                className="w-full bg-transparent outline-none text-gray-900 dark:text-gray-100"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -94,21 +93,22 @@ export default function LoginScreen() {
           {/* Password */}
           <div>
             <div
-              className={`flex items-center gap-2 rounded-md border px-3 py-2 bg-purple-50/40 ${
-                errors.pwd ? "border-rose-400" : "border-purple-200"
-              }`}
+              className={`flex items-center gap-2 rounded-md border px-3 py-2 
+                bg-purple-50/40 dark:bg-gray-800
+                ${errors.pwd ? "border-rose-400" : "border-purple-200 dark:border-gray-700"}
+              `}
             >
-              <span className="text-gray-700">🔒</span>
+              <span className="text-gray-700 dark:text-gray-300">🔒</span>
               <input
                 type={showPwd ? "text" : "password"}
                 placeholder="Contraseña"
-                className="w-full bg-transparent outline-none"
+                className="w-full bg-transparent outline-none text-gray-900 dark:text-gray-100"
                 value={pwd}
                 onChange={(e) => setPwd(e.target.value)}
               />
               <button
                 type="button"
-                className="text-gray-600"
+                className="text-gray-600 dark:text-gray-300"
                 onClick={() => setShowPwd((v) => !v)}
                 title={showPwd ? "Ocultar" : "Mostrar"}
               >
@@ -124,7 +124,7 @@ export default function LoginScreen() {
           <div className="text-right">
             <button
               type="button"
-              className="text-sm text-purple-600 hover:underline"
+              className="text-sm text-purple-600 hover:underline dark:text-purple-400"
               onClick={() => alert("Navegar a recuperación de contraseña")}
             >
               ¿Olvidaste tu contraseña?
@@ -139,18 +139,19 @@ export default function LoginScreen() {
           ) : (
             <button
               type="submit"
-              className="w-full rounded-md bg-purple-50 text-purple-700 py-3 hover:bg-purple-100 border border-purple-200"
+              className="w-full rounded-md bg-purple-50 text-purple-700 py-3 hover:bg-purple-100 border border-purple-200 
+              dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700 dark:border-purple-500"
             >
               Ingresar
             </button>
           )}
 
           {/* Register */}
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-gray-600 dark:text-gray-300">
             ¿No tienes una cuenta?{" "}
             <button
               type="button"
-              className="text-purple-700 hover:underline"
+              className="text-purple-700 hover:underline dark:text-purple-400"
               onClick={() => alert("Navegar a registro")}
             >
               Regístrate
@@ -159,9 +160,9 @@ export default function LoginScreen() {
         </form>
       </div>
 
-      {/* Snack minimalista */}
+      {/* Snack */}
       {snack && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-2 rounded-lg shadow">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-2 rounded-lg shadow dark:bg-gray-800">
           {snack}
         </div>
       )}

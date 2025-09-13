@@ -1,17 +1,16 @@
+// src/components/SolicitudesScreen.jsx
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { base64LogoHeader, base64LogoFooter} from "./FotoScreen"
-
+import { base64LogoHeader, base64LogoFooter } from "./FotoScreen";
 
 const USACH_ORANGE = "#E77500";
 
 export default function SolicitudesScreen() {
   const navigate = useNavigate();
 
-  // Datos simulados (como en tu Dart)
   const [solicitudes] = useState([
     {
-      tipo: "Ampliación dfuera de plazo",
+      tipo: "Ampliación fuera de plazo",
       estado: "Recepcionado",
       fechaCreacion: "22/07/2025 12:24",
       ultimaActualizacion: "22/07/2025 12:24",
@@ -28,16 +27,14 @@ export default function SolicitudesScreen() {
 
   const [periodo, setPeriodo] = useState("Primer semestre del año 2025");
 
-  // helper colores por estado
   const getEstadoStyles = (estado) => {
     if (estado === "Aceptada") {
-      return { bg: "bg-green-100", fg: "text-green-800" };
+      return { bg: "bg-green-100 dark:bg-green-900", fg: "text-green-800 dark:text-green-300" };
     }
     if (estado?.includes("Despachado")) {
-      return { bg: "bg-orange-100", fg: "text-[##E77500]" };
+      return { bg: "bg-orange-100 dark:bg-orange-900", fg: "text-orange-800 dark:text-orange-300" };
     }
-    // Recepcionado / otros
-    return { bg: "bg-orange-100", fg: "text-orange-800" };
+    return { bg: "bg-orange-100 dark:bg-orange-900", fg: "text-orange-800 dark:text-orange-300" };
   };
 
   const logosState = useMemo(
@@ -49,15 +46,15 @@ export default function SolicitudesScreen() {
   );
 
   return (
-    <div className="min-h-screen w-full flex flex-col">
+    <div className="min-h-screen w-full flex flex-col bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {/* AppBar */}
       <header className="px-4 py-3 bg-teal-600 text-white text-lg font-bold shadow">
         <button
           onClick={() => navigate(-1)}
           className="mr-3 text-xl hover:text-gray-200"
         >
-          ← 
-        </button>  {/*Cambiar el icono por <*/}
+          ←
+        </button>
         Solicitudes
       </header>
 
@@ -65,7 +62,7 @@ export default function SolicitudesScreen() {
         {/* Barra de filtros */}
         <div className="flex flex-wrap items-center gap-3">
           <select
-            className="border rounded-md px-3 py-2"
+            className="border rounded-md px-3 py-2 bg-white dark:bg-gray-800 dark:border-gray-700"
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
           >
@@ -73,7 +70,7 @@ export default function SolicitudesScreen() {
           </select>
 
           <button
-            className="rounded-md bg-gray-100 border px-4 py-2 hover:bg-gray-200"
+            className="rounded-md bg-gray-100 dark:bg-gray-700 border px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
             onClick={() => alert("Filtrar (placeholder)")}
           >
             Filtrar
@@ -83,21 +80,19 @@ export default function SolicitudesScreen() {
             className="rounded-md text-white px-4 py-2"
             style={{ backgroundColor: USACH_ORANGE }}
             onClick={() =>
-              navigate("/formulario_cae", {
-                state: { ...logosState },
-              })
+              navigate("/formulario_cae", { state: { ...logosState } })
             }
           >
             Nueva solicitud
           </button>
         </div>
 
-        {/* Desktop: tabla (md+) */}
+        {/* Desktop: tabla */}
         <div className="hidden md:block">
           <div className="overflow-x-auto">
             <table className="min-w-[800px] w-full border-collapse">
               <thead>
-                <tr className="text-left border-b">
+                <tr className="text-left border-b border-gray-200 dark:border-gray-700">
                   <th className="py-2 px-3">#</th>
                   <th className="py-2 px-3">Tipo de solicitud</th>
                   <th className="py-2 px-3">Estado</th>
@@ -110,7 +105,10 @@ export default function SolicitudesScreen() {
                 {solicitudes.map((s, i) => {
                   const est = getEstadoStyles(s.estado);
                   return (
-                    <tr key={i} className="border-b hover:bg-gray-50">
+                    <tr
+                      key={i}
+                      className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
                       <td className="py-3 px-3">{i + 1}</td>
                       <td className="py-3 px-3">{s.tipo}</td>
                       <td className="py-3 px-3">
@@ -126,12 +124,12 @@ export default function SolicitudesScreen() {
                       </td>
                       <td className="py-3 px-3">
                         {s.documento && (
-                          <span className="text-blue-600">📄</span>
+                          <span className="text-blue-600 dark:text-blue-400">📄</span>
                         )}
                       </td>
                       <td className="py-3 px-3">
                         <button
-                          className="rounded-md border px-3 py-1 bg-white hover:bg-gray-100"
+                          className="rounded-md border px-3 py-1 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-600"
                           onClick={() => navigate("/estado_solicitud")}
                           title="Ver estado"
                         >
@@ -146,25 +144,22 @@ export default function SolicitudesScreen() {
           </div>
         </div>
 
-        {/* Mobile: cards (md- ) */}
+        {/* Mobile: cards */}
         <div className="md:hidden space-y-4">
           {solicitudes.map((s, i) => {
-            const est = getEstadoStyles(s.estado);
             const estadoColor =
               s.estado === "Aceptada"
-                ? "text-green-700"
+                ? "text-green-700 dark:text-green-300"
                 : s.estado?.includes("Despachado")
                 ? "text-[#E77500]"
-                : "text-orange-700";
+                : "text-orange-700 dark:text-orange-300";
 
             return (
               <div
                 key={i}
-                className="bg-white rounded-2xl shadow border p-4"
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-200 dark:border-gray-700 p-4"
               >
-                <div className="text-lg font-bold">
-                  Solicitud #{i + 1}
-                </div>
+                <div className="text-lg font-bold">Solicitud #{i + 1}</div>
 
                 <div className="mt-3 flex">
                   <div className="font-semibold w-20">Tipo :</div>
@@ -178,7 +173,7 @@ export default function SolicitudesScreen() {
 
                 <div className="mt-2 flex">
                   <div className="font-semibold w-20">Fecha :</div>
-                  <div className="text-sm text-gray-700">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
                     Creación: {s.fechaCreacion}
                     <br />
                     Actualización: {s.ultimaActualizacion}

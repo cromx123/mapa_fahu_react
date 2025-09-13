@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { nodeIcons } from "../utils/mapIcons";
 import {
   MapContainer,
   TileLayer,
@@ -14,7 +15,7 @@ import useCampusMap from "../hooks/useCampusMapController";
 import CameraFollow from "./CameraFollow";
 import HeadingLocationMarkerLion from "./HeadingLocationMarker";
 import DrawerMenu from "./DrawerMenu"; 
-
+import { useAppSettings } from "../context/SettingsContext";
 
 
 // Fix de iconos Leaflet (CRA)
@@ -55,6 +56,17 @@ function MyLocationMarker({ coord }) {
   );
 }
 
+function FlyToPoint({ coord }) {
+  const map = useMap();
+  useEffect(() => {
+    if (coord) {
+      map.flyTo(coord, 19, { duration: 0.8 });
+    }
+  }, [coord, map]);
+  return null;
+}
+
+
 function ControlBar({ setUserCoord }) {
   const map = useMap();
 
@@ -81,7 +93,21 @@ function ControlBar({ setUserCoord }) {
         −
       </button>
       <button
-        onClick={locate}
+        onClick={() => {
+          if (!navigator.geolocation) return;
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const { latitude, longitude, accuracy } = pos.coords;
+              setUserCoord({ lat: latitude, lng: longitude, accuracy });
+              map.flyTo([latitude, longitude], Math.max(map.getZoom(), 18), { duration: 0.4 });
+
+              // 👇 activa seguir usuario SOLO si él lo pidió
+              // setFollowUser(true);
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 8000 }
+          );
+        }}
         className="rounded-lg border bg-white px-3 py-2 shadow hover:bg-gray-50"
         title="Mi ubicación"
       >
@@ -113,6 +139,7 @@ export default function CampusMapScreen() {
     HARD_LOCK_CENTER,
     // acciones
     setQuery,
+    buscarDestino,
     buscarYRutaDesdeBackend,
     onMarkerClick,
     filterSuggestions,
@@ -129,46 +156,96 @@ export default function CampusMapScreen() {
     headingRadRef,
     estPosRef,
     offsetMeters,
+    focusCoord,
   } = useCampusMap();
 
   const inputRef = useRef(null);
   const [openSugg, setOpenSugg] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
   const isLargeScreen = useMemo(() => window.innerWidth > 800, []);
-
+  const { t } = useAppSettings();
   // ⟵⟵⟵ NUEVO: estado del Drawer
   const [openMenu, setOpenMenu] = useState(false);
 
-  // ⟵⟵⟵ NUEVO: función de i18n simple (reemplaza por tu i18n real)
-  const t = (k) =>
-    ({
-      ms_menuTitle: "Menú",
-      ms_login: "Iniciar sesión",
-      ms_portalUsach: "Portal USACH",
-      ms_portalFahu: "Portal FAHU",
-      ms_portalAlumnos: "Portal Alumnos",
-      ms_onlineServices: "Servicios en línea",
-      ms_onlineLibrary: "Biblioteca en línea",
-      ms_settings: "Configuración",
-    }[k] || k);
+  // Filtros
+  const filters = [
+    { label: t("cms_filterLibraries"), query: "biblioteca", category: "type" },
+    { label: t("cms_filterCasinos"), query: "casino", category: "type" },
+    { label: t("cms_filterKiosks"), query: "kiosko", category: "type" },
+    { label: t("cms_filterBathrooms"), query: "baño", category: "type" },
+    { label: t("cms_filterRooms"), query: "sala", category: "type" },
+    { label: t("cms_filterSports"), query: "deporte", category: "type" },
+    { label: t("cms_filterLabs"), query: "laboratorio", category: "type" },
+    { label: t("cms_filterAuditoriums"), query: "auditorio", category: "type" },
+    { label: t("cms_filterParking"), query: "estacionamiento", category: "type" },
+    { label: t("cms_filterFountains"), query: "bebedero", category: "type" },
+    { label: t("cms_filterFaculties"), query: "facultad", category: "facultad" },
+    { label: t("cms_filterDepartments"), query: "departamento", category: "type" },
 
-  // ⟵⟵⟵ NUEVO: tema (azul/naranjo USACH). Ajusta si usas modo claro/oscuro.
-  const drawerTheme = {
-    primary: "#003B71",
-    accent: "#E77500",
-    surface: "#0B0F14",   // panel
-    text: "#E5E7EB",
-    icon: "#9CA3AF",
+    { label: t("cms_filterSector1"), query: "1", category: "sector" },
+    { label: t("cms_filterSector2"), query: "2", category: "sector" },
+    { label: t("cms_filterSector3"), query: "3", category: "sector" },
+    { label: t("cms_filterSector4"), query: "4", category: "sector" },
+    { label: t("cms_filterSector5"), query: "5", category: "sector" },
+    { label: t("cms_filterSector6"), query: "6", category: "sector" },
+    { label: t("cms_filterSector7"), query: "7", category: "sector" },
+    { label: t("cms_filterSector8"), query: "8", category: "sector" },
+  ];
+  const [showAllFilters, setShowAllFilters] = useState(false);
+  const orderedFilters = useMemo(() => {
+    if (!selectedFilter) return filters;
+    // mover el filtro seleccionado al inicio
+    const sel = filters.find((f) => f.query === selectedFilter);
+    const rest = filters.filter((f) => f.query !== selectedFilter);
+    return sel ? [sel, ...rest] : filters;
+  }, [filters, selectedFilter]);
+
+  const startVoiceSearch = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Tu navegador no soporta búsqueda por voz");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-ES";
+    recognition.interimResults = true;   // 👈 permite resultados parciales
+    recognition.continuous = true;      // se detiene cuando el usuario deja de hablar
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setQuery("🎤 Escuchando...");
+    };
+
+    recognition.onresult = (event) => {
+      let texto = "";
+      for (let i = 0; i < event.results.length; i++) {
+        texto += event.results[i][0].transcript + " ";
+      }
+      setQuery(texto.trim());  
+      // Cuando termina la frase (isFinal)
+      if (event.results[event.results.length - 1].isFinal) {
+        buscarDestino(texto.trim());  // dispara búsqueda final
+        setOpenSugg(false);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Error en reconocimiento de voz:", event.error);
+      alert("Error en búsqueda por voz: " + event.error);
+    };
+
+    recognition.onend = () => {
+      console.log("🎤 Reconocimiento terminado");
+    };
+
+    recognition.start();
   };
 
-  // Filtros rápidos como en Flutter
-  const filters = [
-    { label: "Bibliotecas", query: "biblioteca" },
-    { label: "Casinos", query: "casino" },
-    { label: "Baños", query: "baño" },
-    { label: "Salas", query: "sala" },
-    { label: "Otros", query: "otros" },
-  ];
+
+
 
   const lastPosRef = useRef(null);
   const [speedMps, setSpeedMps] = useState(0);
@@ -218,8 +295,9 @@ export default function CampusMapScreen() {
           <div className="w-[340px] p-3">
             <PlaceInfoCard
               place={selectedPlace}
-              routeAvailable={routePoints.length > 0}
+              routeAvailable={!!selectedPlace}
               isNavigationActive={isNavigationActive}
+              buscarYRutaDesdeBackend={buscarYRutaDesdeBackend}
               onStart={startNavigation}
               onStop={stopNavigation}
               onClear={() => { clearSearch(); setSelectedFilter(null); setOpenSugg(false); }}
@@ -227,6 +305,7 @@ export default function CampusMapScreen() {
               distanciaLabel={distanciaLabel}
               etaLabel={etaLabel}
             />
+
           </div>
         )}
         <div className="flex-1 relative">
@@ -235,8 +314,9 @@ export default function CampusMapScreen() {
               <div className="absolute bottom-0 left-0 right-0 p-3 z-[1000]">
                 <PlaceInfoCard
                   place={selectedPlace}
-                  routeAvailable={routePoints.length > 0}
+                  routeAvailable={!!selectedPlace}
                   isNavigationActive={isNavigationActive}
+                  buscarYRutaDesdeBackend={buscarYRutaDesdeBackend}
                   onStart={startNavigation}
                   onStop={stopNavigation}
                   onClear={() => { clearSearch(); setSelectedFilter(null); setOpenSugg(false); }}
@@ -250,13 +330,14 @@ export default function CampusMapScreen() {
             center={INITIAL_CENTER}
             zoom={INITIAL_ZOOM}
             minZoom={1}
-            maxZoom={25}
+            maxZoom={19}
             zoomControl={false}
             className="h-full w-full z-0"
           >
             <TileLayer
               url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
               maxNativeZoom={19}
+              maxZoom={22}
               attribution='&copy; OpenStreetMap contributors'
             />
 
@@ -277,19 +358,59 @@ export default function CampusMapScreen() {
             speedMps={speedMps}
             />
 
+            <FlyToPoint coord={focusCoord} />
 
-            {markers.map((m) => (
-              <Marker
-                key={m.id}
-                position={[m.lat, m.lng]}
-                eventHandlers={{ click: () => onMarkerClick(m) }}
-              >
-                <Popup>
-                  <div className="font-semibold">{m.name}</div>
-                  <div className="text-xs text-gray-600">{m.type}</div>
-                </Popup>
-              </Marker>
-            ))}
+            {markers
+              .filter((m) => m.type?.toLowerCase() !== "camino")
+              .map((m) => {
+                let icon = nodeIcons.default;
+
+                if (m.type?.toLowerCase() === "deporte") {
+                  const nombre = m.name?.toLowerCase().replace(/\s*usach\s*/g, "").trim();
+                  icon = nodeIcons.deporte[nombre] || nodeIcons.default;
+                } else if(m.type?.toLowerCase() === "estructuras"){
+                  const nombre = m.name?.toLowerCase().trim();
+                  icon = nodeIcons.estructuras[nombre] || nodeIcons.estructuras["default"] || nodeIcons.default;
+                } else {
+                  icon = nodeIcons[m.type?.toLowerCase()] || nodeIcons.default;
+                }
+
+                return (
+                  <Marker
+                    key={m.id}
+                    position={[m.lat, m.lng]}
+                    icon={icon}
+                  >
+                    <Popup>
+                      <div className="font-semibold">{m.name}</div>
+                      <div className="text-xs text-gray-600 mb-2">{m.type}</div>
+                      
+                      <div className="flex gap-2">
+                        {/* Botón de información */}
+                        <button
+                          onClick={() => {
+                            onMarkerClick(m);   // esto abre el PlaceInfoCard con más detalles
+                          }}
+                          className="px-2 py-1 text-xs rounded bg-gray-200 hover:bg-gray-300"
+                        >
+                          {t("cms_btn_info")}
+                        </button>
+
+                        {/* Botón de iniciar ruta */}
+                        <button
+                          onClick={() => {
+                            buscarYRutaDesdeBackend(m.name); // traza la ruta
+                          }}
+                          className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                          {t("cms_btn_start")}
+                        </button>
+                      </div>
+                    </Popup>
+
+                  </Marker>
+                );
+            })}
 
             {/* NUEVO: barra de controles unificada */}
             <ControlBar setUserCoord={setUserCoord} />
@@ -321,7 +442,7 @@ export default function CampusMapScreen() {
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
-                      if (query?.trim()) buscarYRutaDesdeBackend(query.trim());
+                      if (query?.trim()) buscarDestino(query.trim());
                       setOpenSugg(false);
                     }}
                     className="flex-1 h-full"
@@ -335,7 +456,7 @@ export default function CampusMapScreen() {
                       }}
                       onFocus={() => setOpenSugg(true)}
                       onBlur={() => setTimeout(() => setOpenSugg(false), 120)} // deja hacer click
-                      placeholder="Buscar sala/edificio…"
+                      placeholder={t("cms_searchHint")}
                       className="w-full h-full outline-none bg-transparent"
                     />
                   </form>
@@ -345,10 +466,11 @@ export default function CampusMapScreen() {
                     type="button"
                     className="px-2 py-1 rounded-lg hover:bg-gray-100"
                     title="Búsqueda por voz"
-                    onClick={() => alert("Mic placeholder.")}
+                    onClick={startVoiceSearch}   
                   >
                     🎤
                   </button>
+
                   <button
                     type="button"
                     className="px-2 py-1 rounded-lg hover:bg-gray-100"
@@ -378,7 +500,7 @@ export default function CampusMapScreen() {
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => {
                                 setQuery(name);
-                                buscarYRutaDesdeBackend(name);
+                                buscarDestino(name);
                                 setOpenSugg(false);
                               }}
                               className="w-full text-left px-3 py-2 hover:bg-gray-50"
@@ -394,10 +516,10 @@ export default function CampusMapScreen() {
                 )}
               </div>
 
-              {/* Filtros*/}
+              {/* Filtros */}
               <div className="w-full md:flex-1">
                 <div className="flex flex-wrap gap-2 overflow-x-auto md:overflow-visible">
-                  {filters.map((f) => {
+                  {(showAllFilters ? orderedFilters : orderedFilters.slice(0, 4)).map((f) => {
                     const active = selectedFilter === f.query;
                     return (
                       <button
@@ -405,9 +527,15 @@ export default function CampusMapScreen() {
                         onClick={() => {
                           const next = active ? null : f.query;
                           setSelectedFilter(next);
-                          const text = next || "";
-                          setQuery(text);
-                          mostrarBusqueda(text);
+
+                          if (next) {
+                            setQuery(next);
+                            mostrarBusqueda(next, f.category);
+                          } else {
+                            setQuery("");
+                            mostrarBusqueda("");
+                          }
+                          setShowAllFilters(false); // cerrar lista al seleccionar
                         }}
                         className={
                           "px-3 py-1 rounded-2xl border text-sm " +
@@ -420,6 +548,14 @@ export default function CampusMapScreen() {
                       </button>
                     );
                   })}
+
+                  {/* Botón extra: ... o – */}
+                  <button
+                    onClick={() => setShowAllFilters((v) => !v)}
+                    className="px-3 py-1 rounded-2xl border text-sm bg-white text-gray-800 border-gray-300"
+                  >
+                    {showAllFilters ? "–" : "..."}
+                  </button>
                 </div>
               </div>
             </div>
@@ -433,6 +569,7 @@ export default function CampusMapScreen() {
 function PlaceInfoCard({
   place,
   routeAvailable,
+  buscarYRutaDesdeBackend,
   isNavigationActive,
   onStart,
   onStop,
@@ -441,6 +578,8 @@ function PlaceInfoCard({
   distanciaLabel,
   etaLabel,
 }) {
+  const { t } = useAppSettings();
+
   if (!place && !routeAvailable) return null;
 
   return (
@@ -458,7 +597,7 @@ function PlaceInfoCard({
           className="text-sm rounded-lg border px-3 py-1.5 bg-white hover:bg-gray-50"
           title="Borrar búsqueda"
         >
-          Cerrar
+        {t("cms_btn_close")}
         </button>
       </div>
 
@@ -466,9 +605,18 @@ function PlaceInfoCard({
       {place?.description && (
         <p className="mt-2 text-sm text-gray-700">{place.description}</p>
       )}
-      {place?.lat != null && place?.lng != null && (
-        <div className="mt-2 text-xs text-gray-500">
-          Lat: {place.lat?.toFixed?.(6)} · Lng: {place.lng?.toFixed?.(6)}
+      {(place?.sector || place?.floor) && (
+        <div className="mt-2 text-sm">
+          {place?.sector && (
+            <span className="inline-block mr-2 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs border border-blue-200">
+              Sector: {place.sector}
+            </span>
+          )}
+          {place?.floor && (
+            <span className="inline-block rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-xs border border-emerald-200">
+              Piso: {place.floor}
+            </span>
+          )}
         </div>
       )}
 
@@ -487,14 +635,18 @@ function PlaceInfoCard({
               onClick={onStop}
               className="rounded-xl px-4 py-2 bg-red-600 text-white font-semibold hover:bg-red-700"
             >
-              Salir
+              {t("cms_btn_exit")}
             </button>
           </div>
         </div>
       ) : (
         <div className="mt-4 flex items-center justify-between">
           <button
-            onClick={onStart}
+            onClick={() => {
+              if (place) {
+                buscarYRutaDesdeBackend(place.name); // ← recién aquí traza ruta
+              }
+            }}
             disabled={!routeAvailable}
             className={
               "rounded-xl px-4 py-2 font-semibold " +
@@ -504,7 +656,7 @@ function PlaceInfoCard({
             }
             title="Iniciar ruta"
           >
-            Iniciar
+            {t("cms_btn_start")}
           </button>
         </div>
       )}
