@@ -10,6 +10,7 @@ export default function useCampusMapController() {
   const [suggestions, setSuggestions] = useState([]); // strings
   const [markers, setMarkers] = useState([]); // [{id, name, type, lat, lng}]
   const [routePoints, setRoutePoints] = useState([]); // [[lat, lng], ...]
+  const [alternativeRoute, setAlternativeRoute] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null); // {id,name,type,lat,lng,...}
   const [isInfoCardVisible, setIsInfoCardVisible] = useState(false);
 
@@ -221,6 +222,90 @@ export default function useCampusMapController() {
     } catch {}
   }, []);
 
+  const buscarAlternativasDesdeBackend = useCallback(async (texto) => {
+    try {
+      const q = (texto ?? "").trim();
+      if (!q) return;
+
+      // 1) Buscar el destino
+      const r1 = await fetch(
+        `${BASE_URL}/destinos?query=${encodeURIComponent(q)}&category=name`
+      );
+      if (!r1.ok) return;
+      const j1 = await r1.json();
+      const item = j1?.items?.[0];
+      if (!item) return;
+
+      const dest = {
+        id: item.id,
+        name: item.nombre || "",
+        type: item.tipo || "",
+        sector: item.sector || "",
+        floor: item.nivel || "",
+        lat: item.lat,
+        lng: item.lng,
+      };
+
+      // 2) Obtener posición del usuario
+      const pos = await getUserPosition();
+      if (!pos) return;
+
+      userPosRef.current = pos;
+      setUserCoord({ lat: pos.lat, lng: pos.lng });
+      if (!estPosRef.current) estPosRef.current = [pos.lat, pos.lng];
+
+      // 3) Llamar al nuevo endpoint con rutas alternativas
+      const r2 = await fetch(
+        `${BASE_URL}/rutas_alternativas?lat=${pos.lat}&lng=${pos.lng}&destino=${encodeURIComponent(dest.id)}`
+      );
+      if (!r2.ok) {
+        setRoutePoints([]);
+        setAlternativeRoute([]);
+        return;
+      }
+
+      const j2 = await r2.json();
+      const rutas = j2?.rutas ?? [];
+
+      // 4) Extraer rutas principal y alternativa
+      const ruta1 = rutas[0]?.ruta?.map((p) => [p.lat, p.lng]) ?? [];
+      const ruta2 = rutas[1]?.ruta?.map((p) => [p.lat, p.lng]) ?? [];
+
+      setRoutePoints(ruta1);
+      setAlternativeRoute(ruta2);
+
+      // 5) Actualizar info visual y marcador final
+      setSelectedPlace(dest);
+      setIsInfoCardVisible(true);
+      setMarkers(
+        ruta1.length
+          ? [
+              {
+                id: dest.id,
+                name: dest.name,
+                type: dest.type,
+                lat: ruta1.at(-1)[0],
+                lng: ruta1.at(-1)[1],
+              },
+            ]
+          : []
+      );
+
+      // 6) Calcular distancia y tiempo estimado
+      const dist = Number(rutas[0]?.distancia_total_metros ?? 0);
+      const km = dist / 1000;
+      const min = (km / 5) * 60;
+      setDistanciaM(dist);
+      setTiempoMin(min);
+      setEtaDate(new Date(Date.now() + Math.round(min) * 60 * 1000));
+
+      setFollowUser(true);
+      setIsNavigationActive(true);
+    } catch (err) {
+      console.error("Error al obtener rutas alternativas:", err);
+    }
+  }, []);
+
 
   // ---- Mostrar búsqueda: solo marcadores desde backend ----
   const mostrar_busqueda = useCallback(async (texto, category = "type") => {
@@ -241,6 +326,8 @@ export default function useCampusMapController() {
           id: l.id,
           name: l.nombre,
           type: l.tipo,
+          sector: l.sector,
+          floor: l.nivel,
           lat: Number(l.lat),
           lng: Number(l.lng),
         }))
@@ -367,6 +454,7 @@ export default function useCampusMapController() {
   const onMarkerClick = useCallback((place) => {
     setSelectedPlace(place);
     setIsInfoCardVisible(true);
+    setFocusCoord([place.lat, place.lng]);
   }, []);
 
   // ---- helpers para UI (labels) ----
@@ -441,6 +529,7 @@ export default function useCampusMapController() {
     // acciones
     filterSuggestions,
     buscarYRutaDesdeBackend,
+    buscarAlternativasDesdeBackend,
     buscarDestino,  
     mostrar_busqueda,
     mostrarBusqueda,
@@ -458,5 +547,6 @@ export default function useCampusMapController() {
     headingRadRef,
     offsetMeters,
     focusCoord,
+    alternativeRoute,
   };
 }
