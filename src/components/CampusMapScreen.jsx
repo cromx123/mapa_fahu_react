@@ -100,7 +100,7 @@ function ControlBar({ setUserCoord }) {
               setUserCoord({ lat: latitude, lng: longitude, accuracy });
               map.flyTo([latitude, longitude], Math.max(map.getZoom(), 18), { duration: 0.4 });
 
-              // 👇 activa seguir usuario SOLO si él lo pidió
+              //seguir usuario SOLO si él lo pidió
               // setFollowUser(true);
             },
             () => {},
@@ -142,6 +142,7 @@ export default function CampusMapScreen() {
     buscarYRutaDesdeBackend,
     buscarAlternativasDesdeBackend,
     alternativeRoute,
+    alternativeRoutetwo,
     onMarkerClick,
     filterSuggestions,
     mostrarBusqueda,
@@ -363,10 +364,19 @@ export default function CampusMapScreen() {
                     opacity={0.7}
                   />
                 )}
+                {alternativeRoutetwo.length > 0 && (
+                  <Polyline
+                    positions={alternativeRoutetwo}
+                    color="red"
+                    weight={4}
+                    dashArray="10, 10"
+                    opacity={0.6}
+                  />
+                )}
 
                 {/* Ajusta el mapa para mostrar ambas rutas */}
                 <FitRoute
-                  points={[...routePoints, ...alternativeRoute].filter(Boolean)}
+                  points={[...routePoints, ...alternativeRoute, ...alternativeRoutetwo].filter(Boolean)}
                 />
               </>
             )}

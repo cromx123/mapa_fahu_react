@@ -11,6 +11,7 @@ export default function useCampusMapController() {
   const [markers, setMarkers] = useState([]); // [{id, name, type, lat, lng}]
   const [routePoints, setRoutePoints] = useState([]); // [[lat, lng], ...]
   const [alternativeRoute, setAlternativeRoute] = useState([]);
+  const [alternativeRoutetwo, setAlternativeRoutetwo] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null); // {id,name,type,lat,lng,...}
   const [isInfoCardVisible, setIsInfoCardVisible] = useState(false);
 
@@ -166,7 +167,7 @@ export default function useCampusMapController() {
       setSelectedPlace(dest);
       setIsInfoCardVisible(true);
       setMarkers([{ id: dest.id, name: dest.name, type: dest.type, lat: dest.lat, lng: dest.lng }]);
-      setRoutePoints([]); // aún sin ruta
+      setRoutePoints([]); 
     } catch (e) {
       console.error(e);
     }
@@ -196,7 +197,6 @@ export default function useCampusMapController() {
         lat: item.lat, lng: item.lng,
       };
 
-      // 2) Posición y 3) Ruta exactamente igual que ya lo tenías…
       const pos = await getUserPosition();
       if (!pos) return;
       userPosRef.current = pos;
@@ -227,14 +227,22 @@ export default function useCampusMapController() {
       const q = (texto ?? "").trim();
       if (!q) return;
 
+      console.log(" Buscando destino con query:", q);
+
       // 1) Buscar el destino
       const r1 = await fetch(
         `${BASE_URL}/destinos?query=${encodeURIComponent(q)}&category=name`
       );
-      if (!r1.ok) return;
+      console.log(" Respuesta destinos (status):", r1.status);
+
       const j1 = await r1.json();
+      console.log(" JSON destinos recibido:", j1);
+
       const item = j1?.items?.[0];
-      if (!item) return;
+      if (!item) {
+        console.warn(" No se encontró ningún destino para:", q);
+        return;
+      }
 
       const dest = {
         id: item.id,
@@ -245,34 +253,44 @@ export default function useCampusMapController() {
         lat: item.lat,
         lng: item.lng,
       };
+      console.log(" Destino seleccionado:", dest);
 
       // 2) Obtener posición del usuario
       const pos = await getUserPosition();
-      if (!pos) return;
+      if (!pos) {
+        console.warn(" No se pudo obtener la posición del usuario.");
+        return;
+      }
+      console.log(" Posición del usuario:", pos);
 
       userPosRef.current = pos;
       setUserCoord({ lat: pos.lat, lng: pos.lng });
       if (!estPosRef.current) estPosRef.current = [pos.lat, pos.lng];
 
-      // 3) Llamar al nuevo endpoint con rutas alternativas
+      // 3) Llamar al endpoint con rutas alternativas
       const r2 = await fetch(
         `${BASE_URL}/rutas_alternativas?lat=${pos.lat}&lng=${pos.lng}&destino=${encodeURIComponent(dest.id)}`
       );
-      if (!r2.ok) {
-        setRoutePoints([]);
-        setAlternativeRoute([]);
-        return;
-      }
+      console.log(" Respuesta rutas alternativas (status):", r2.status);
 
       const j2 = await r2.json();
+      console.log(" JSON rutas alternativas recibido:", j2);
+
       const rutas = j2?.rutas ?? [];
 
       // 4) Extraer rutas principal y alternativa
       const ruta1 = rutas[0]?.ruta?.map((p) => [p.lat, p.lng]) ?? [];
       const ruta2 = rutas[1]?.ruta?.map((p) => [p.lat, p.lng]) ?? [];
+      const ruta3 = rutas[2]?.ruta?.map((p) => [p.lat, p.lng]) ?? [];
+      console.log(" Ruta principal:", ruta1);
+      console.log(" Ruta alternativa:", ruta2);
+      console.log(" Segunda alternativa (si existe):", ruta3);
+      console.log("Distancias de cada ruta:", rutas.map(r => r.distancia_total_metros));
+
 
       setRoutePoints(ruta1);
       setAlternativeRoute(ruta2);
+      setAlternativeRoutetwo(ruta3);
 
       // 5) Actualizar info visual y marcador final
       setSelectedPlace(dest);
@@ -292,19 +310,34 @@ export default function useCampusMapController() {
       );
 
       // 6) Calcular distancia y tiempo estimado
-      const dist = Number(rutas[0]?.distancia_total_metros ?? 0);
-      const km = dist / 1000;
-      const min = (km / 5) * 60;
-      setDistanciaM(dist);
-      setTiempoMin(min);
-      setEtaDate(new Date(Date.now() + Math.round(min) * 60 * 1000));
+      const dist_1 = Number(rutas[0]?.distancia_total_metros ?? 0);
+      const km_1 = dist_1 / 1000;
+      const min_1 = (km_1 / 5) * 60;
+
+      const dist_2 = Number(rutas[1]?.distancia_total_metros ?? 0);
+      const km_2 = dist_2 / 1000;
+      const min_2 = (km_2 / 5) * 60;
+
+      const dist_3 = Number(rutas[2]?.distancia_total_metros ?? 0);
+      const km_3 = dist_3 / 1000;
+      const min_3 = (km_3 / 5) * 60;
+
+      console.log(` Distancia total: ${km_1.toFixed(2)} km, Tiempo estimado: ${min_1.toFixed(1)} min`);
+
+      console.log(` Alternativa 1 - Distancia: ${km_2.toFixed(2)} km, Tiempo: ${min_2.toFixed(1)} min`);
+      console.log(` Alternativa 2 - Distancia: ${km_3.toFixed(2)} km, Tiempo: ${min_3.toFixed(1)} min`);
+
+      setDistanciaM(dist_1);
+      setTiempoMin(min_1);
+      setEtaDate(new Date(Date.now() + Math.round(min_1) * 60 * 1000));
 
       setFollowUser(true);
-      setIsNavigationActive(true);
+      setIsNavigationActive(false);
     } catch (err) {
-      console.error("Error al obtener rutas alternativas:", err);
+      console.error(" Error al obtener rutas alternativas:", err);
     }
   }, []);
+
 
 
   // ---- Mostrar búsqueda: solo marcadores desde backend ----
@@ -548,5 +581,6 @@ export default function useCampusMapController() {
     offsetMeters,
     focusCoord,
     alternativeRoute,
+    alternativeRoutetwo,
   };
 }
