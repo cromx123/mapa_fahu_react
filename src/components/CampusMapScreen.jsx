@@ -4,7 +4,6 @@ import {
   MapContainer,
   TileLayer,
   Marker,
-  Popup,
   Polyline,
   useMap,
   useMapEvents,
@@ -101,7 +100,7 @@ function ControlBar({ setUserCoord }) {
               setUserCoord({ lat: latitude, lng: longitude, accuracy });
               map.flyTo([latitude, longitude], Math.max(map.getZoom(), 18), { duration: 0.4 });
 
-              // 👇 activa seguir usuario SOLO si él lo pidió
+              //seguir usuario SOLO si él lo pidió
               // setFollowUser(true);
             },
             () => {},
@@ -141,6 +140,9 @@ export default function CampusMapScreen() {
     setQuery,
     buscarDestino,
     buscarYRutaDesdeBackend,
+    buscarAlternativasDesdeBackend,
+    alternativeRoute,
+    alternativeRoutetwo,
     onMarkerClick,
     filterSuggestions,
     mostrarBusqueda,
@@ -166,6 +168,7 @@ export default function CampusMapScreen() {
   const { t } = useAppSettings();
   // ⟵⟵⟵ NUEVO: estado del Drawer
   const [openMenu, setOpenMenu] = useState(false);
+
 
   // Filtros
   const filters = [
@@ -248,6 +251,7 @@ export default function CampusMapScreen() {
 
 
   const lastPosRef = useRef(null);
+  const mapRef = useRef();
   const [speedMps, setSpeedMps] = useState(0);
 
   useEffect(() => {
@@ -298,6 +302,7 @@ export default function CampusMapScreen() {
               routeAvailable={!!selectedPlace}
               isNavigationActive={isNavigationActive}
               buscarYRutaDesdeBackend={buscarYRutaDesdeBackend}
+              buscarAlternativasDesdeBackend={buscarAlternativasDesdeBackend}
               onStart={startNavigation}
               onStop={stopNavigation}
               onClear={() => { clearSearch(); setSelectedFilter(null); setOpenSugg(false); }}
@@ -317,6 +322,7 @@ export default function CampusMapScreen() {
                   routeAvailable={!!selectedPlace}
                   isNavigationActive={isNavigationActive}
                   buscarYRutaDesdeBackend={buscarYRutaDesdeBackend}
+                  buscarAlternativasDesdeBackend={buscarAlternativasDesdeBackend}
                   onStart={startNavigation}
                   onStop={stopNavigation}
                   onClear={() => { clearSearch(); setSelectedFilter(null); setOpenSugg(false); }}
@@ -345,10 +351,36 @@ export default function CampusMapScreen() {
 
             {routePoints.length > 0 && (
               <>
-                <Polyline positions={routePoints} weight={4} />
-                <FitRoute points={routePoints} />
+                {/* Ruta principal (azul) */}
+                <Polyline positions={routePoints} color="blue" weight={5} />
+
+                {/* Ruta alternativa (naranjo, punteada) */}
+                {alternativeRoute.length > 0 && (
+                  <Polyline
+                    positions={alternativeRoute}
+                    color="orange"
+                    weight={4}
+                    dashArray="10, 10"
+                    opacity={0.7}
+                  />
+                )}
+                {alternativeRoutetwo.length > 0 && (
+                  <Polyline
+                    positions={alternativeRoutetwo}
+                    color="red"
+                    weight={4}
+                    dashArray="10, 10"
+                    opacity={0.6}
+                  />
+                )}
+
+                {/* Ajusta el mapa para mostrar ambas rutas */}
+                <FitRoute
+                  points={[...routePoints, ...alternativeRoute, ...alternativeRoutetwo].filter(Boolean)}
+                />
               </>
             )}
+
 
             <HeadingLocationMarkerLion             
             coord={userCoord}
@@ -380,34 +412,10 @@ export default function CampusMapScreen() {
                     key={m.id}
                     position={[m.lat, m.lng]}
                     icon={icon}
+                    eventHandlers={{
+                      click: () => onMarkerClick(m), // 👈 abre la PlaceInfoCard
+                    }}
                   >
-                    <Popup>
-                      <div className="font-semibold">{m.name}</div>
-                      <div className="text-xs text-gray-600 mb-2">{m.type}</div>
-                      
-                      <div className="flex gap-2">
-                        {/* Botón de información */}
-                        <button
-                          onClick={() => {
-                            onMarkerClick(m);   // esto abre el PlaceInfoCard con más detalles
-                          }}
-                          className="px-2 py-1 text-xs rounded bg-gray-200 hover:bg-gray-300"
-                        >
-                          {t("cms_btn_info")}
-                        </button>
-
-                        {/* Botón de iniciar ruta */}
-                        <button
-                          onClick={() => {
-                            buscarYRutaDesdeBackend(m.name); // traza la ruta
-                          }}
-                          className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700"
-                        >
-                          {t("cms_btn_start")}
-                        </button>
-                      </div>
-                    </Popup>
-
                   </Marker>
                 );
             })}
@@ -424,7 +432,6 @@ export default function CampusMapScreen() {
               headingRadRef={headingRadRef}
               offsetMeters={offsetMeters}
             />
-
           </MapContainer>
 
           {/* Controles superiores (Busqueda + Filtros) */}
@@ -442,7 +449,10 @@ export default function CampusMapScreen() {
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
-                      if (query?.trim()) buscarDestino(query.trim());
+                      if (query?.trim()) {
+                        buscarDestino(query.trim()); 
+                        inputRef.current?.blur();
+                      }
                       setOpenSugg(false);
                     }}
                     className="flex-1 h-full"
@@ -570,6 +580,7 @@ function PlaceInfoCard({
   place,
   routeAvailable,
   buscarYRutaDesdeBackend,
+  buscarAlternativasDesdeBackend,
   isNavigationActive,
   onStart,
   onStop,
@@ -582,8 +593,37 @@ function PlaceInfoCard({
 
   if (!place && !routeAvailable) return null;
 
+  const defaultImage = "/icons/nube.png"; 
+  // const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  // const photoRef = "AciIO2fOx_TYlvHKJQn14N1TTZ3VIjxjdIYmUJYiCrdHhI_g-BDswUATrYC8VFnrGVxEZIoLqIBTdQaw_mm6Pa4pFB7Nw_iVeuYgmLvfE7APiL4PEl_ZjMvxK5NnGROSaB4vOTbeLGKAy54IQHzj9YOSXtNoq8aL-mggObciwhmTOPhlI70uHaorkjZ2L9IPQuVJ6RLSVzaOn6w15hgO3LgO4lzZBxiG-e5jTThBhUKXlpvBZxdJbbp7XPIMruPc7PK7Jca1yf40Pd8kToh0N0PYfDEzOHFw9qiHp8A3oeVYvhBcyUYUr7umKJhf-ndVtl45dRaZPlgJO_iVhf_v8zr-ZHWrMMPGfX-JCfwGoCPJKikNNORFTwaI0hHj5FshEfSzANAL1OgNIXBW6o074VkM2qowA7FnJ8fy4Qx7rZY9YzLmFWqd";
+  const imageUrl = defaultImage;
+  // const imageUrl = photoRef
+  //   ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${apiKey}`
+  //   : defaultImage;
+
+
   return (
     <div className="bg-white/95 backdrop-blur rounded-2xl shadow p-4 w-full max-w-[340px] border">
+      {/* Banner de imagen */}
+      <div className="relative h-40 w-full">
+        <img
+          src={imageUrl}
+          alt={place?.name || "Lugar"}
+          className="object-cover w-full h-full rounded-t-2xl bg-gray-100"
+          onError={(e) => {
+            e.currentTarget.onerror = null; // evita bucle infinito
+            e.currentTarget.src = defaultImage;
+            e.currentTarget.classList.add("object-contain"); // cambia a 'contain' si es fallback
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        {place?.name && (
+          <div className="absolute bottom-2 left-3 text-white text-lg font-semibold drop-shadow">
+            {place.name}
+          </div>
+        )}
+      </div>
+
       {/* header */}
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -619,7 +659,26 @@ function PlaceInfoCard({
           )}
         </div>
       )}
-
+      {/* info de distancia y tiempo */}
+      {(distanciaLabel || remainingMinutes || etaLabel) && (
+        <div className="mt-3 flex flex-col text-sm text-gray-700">
+          {distanciaLabel && (
+            <div>
+              <span className="font-medium">Distancia:</span> {distanciaLabel}
+            </div>
+          )}
+          {remainingMinutes && (
+            <div>
+              <span className="font-medium">Duración:</span> {remainingMinutes} min
+            </div>
+          )}
+          {etaLabel && (
+            <div>
+              <span className="font-medium">Llegada estimada:</span> {etaLabel}
+            </div>
+          )}
+        </div>
+      )}
       {/* navegación */}
       {isNavigationActive ? (
         <div className="mt-4">
@@ -657,6 +716,13 @@ function PlaceInfoCard({
             title="Iniciar ruta"
           >
             {t("cms_btn_start")}
+          </button>
+          {/* Botón ¿Cómo llegar? */}
+          <button
+            onClick={() => buscarAlternativasDesdeBackend(place.name)}
+            className="px-2 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700"
+          >
+            ¿Cómo llegar?
           </button>
         </div>
       )}
