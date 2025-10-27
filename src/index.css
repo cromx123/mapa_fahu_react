@@ -30,3 +30,7 @@ html, body, #root { height: 100%; }
 }
 /* por si Tailwind aplica algo raro a svg/img */
 .heading-marker-lion svg { display:block; max-width:none; }
+
+.eta-card {
+  transform: translateX(20px); /* o translateY(-10px) */
+}

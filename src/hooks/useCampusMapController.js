@@ -14,6 +14,9 @@ export default function useCampusMapController() {
   const [alternativeRoutetwo, setAlternativeRoutetwo] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null); // {id,name,type,lat,lng,...}
   const [isInfoCardVisible, setIsInfoCardVisible] = useState(false);
+  const [rutasInfo, setRutasInfo] = useState([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
+
 
   // Navegación / seguimiento
   const [isNavigationActive, setIsNavigationActive] = useState(false);
@@ -37,6 +40,13 @@ export default function useCampusMapController() {
   const [tiempoMin, setTiempoMin] = useState(0);
   const [etaDate, setEtaDate]     = useState(null);
   const { unit } = useAppSettings();
+  const [distanciaM2, setDistanciaM2] = useState(0);
+  const [tiempoMin2, setTiempoMin2] = useState(0);
+  const [etaDate2, setEtaDate2]     = useState(null);
+  const [distanciaM3, setDistanciaM3] = useState(0);
+  const [tiempoMin3, setTiempoMin3] = useState(0);
+  const [etaDate3, setEtaDate3]     = useState(null);
+
 
 
   // ---- Utilidades geométricas ----
@@ -287,7 +297,6 @@ export default function useCampusMapController() {
       console.log(" Segunda alternativa (si existe):", ruta3);
       console.log("Distancias de cada ruta:", rutas.map(r => r.distancia_total_metros));
 
-
       setRoutePoints(ruta1);
       setAlternativeRoute(ruta2);
       setAlternativeRoutetwo(ruta3);
@@ -323,13 +332,29 @@ export default function useCampusMapController() {
       const min_3 = (km_3 / 5) * 60;
 
       console.log(` Distancia total: ${km_1.toFixed(2)} km, Tiempo estimado: ${min_1.toFixed(1)} min`);
-
       console.log(` Alternativa 1 - Distancia: ${km_2.toFixed(2)} km, Tiempo: ${min_2.toFixed(1)} min`);
       console.log(` Alternativa 2 - Distancia: ${km_3.toFixed(2)} km, Tiempo: ${min_3.toFixed(1)} min`);
 
       setDistanciaM(dist_1);
       setTiempoMin(min_1);
       setEtaDate(new Date(Date.now() + Math.round(min_1) * 60 * 1000));
+
+      setDistanciaM2(dist_2);
+      setTiempoMin2(min_2);
+      setEtaDate2(new Date(Date.now() + Math.round(min_2) * 60 * 1000));
+      
+      setDistanciaM3(dist_3);
+      setTiempoMin3(min_3);
+      setEtaDate3(new Date(Date.now() + Math.round(min_3) * 60 * 1000));
+
+      setRutasInfo([
+        { puntos: ruta1, distanciaM: dist_1, tiempoMin: min_1, etaDate: new Date(Date.now() + Math.round(min_1) * 60 * 1000) },
+        { puntos: ruta2, distanciaM: dist_2, tiempoMin: min_2, etaDate: new Date(Date.now() + Math.round(min_2) * 60 * 1000) },
+        { puntos: ruta3, distanciaM: dist_3, tiempoMin: min_3, etaDate: new Date(Date.now() + Math.round(min_3) * 60 * 1000) },
+      ]);
+
+      // inicializa selección en la principal
+      setSelectedRouteIndex(0);
 
       setFollowUser(true);
       setIsNavigationActive(false);
@@ -497,6 +522,18 @@ export default function useCampusMapController() {
     return secs <= 0 ? 0 : Math.ceil(secs / 60);
   }, [etaDate, tiempoMin]);
 
+  const remainingMinutes2 = useMemo(() => {
+    if (!etaDate2) return Math.round(tiempoMin2);
+    const secs = Math.ceil((etaDate2.getTime() - Date.now()) / 1000);
+    return secs <= 0 ? 0 : Math.ceil(secs / 60);
+  }, [etaDate2, tiempoMin2]);
+
+  const remainingMinutes3 = useMemo(() => {
+    if (!etaDate3) return Math.round(tiempoMin3);
+    const secs = Math.ceil((etaDate3.getTime() - Date.now()) / 1000);
+    return secs <= 0 ? 0 : Math.ceil(secs / 60);
+  }, [etaDate3, tiempoMin3]);
+
   const distanciaLabel = useMemo(() => {
     if (unit === "miles") {
       const miles = distanciaM / 1609.34;
@@ -510,11 +547,47 @@ export default function useCampusMapController() {
     }
   }, [distanciaM, unit]);
 
+  const distanciaLabel2 = useMemo(() => {
+    if (unit === "miles") {
+      const miles = distanciaM2 / 1609.34;
+      return miles >= 0.1
+        ? `${miles.toFixed(2)} mi`
+        : `${(miles * 5280).toFixed(0)} ft`;
+    } else {
+      // default: metros
+      if (distanciaM2 >= 1000) return `${(distanciaM2 / 1000).toFixed(1)} km`;
+      return `${Math.round(distanciaM2)} m`;
+    }
+  }, [distanciaM2, unit]);
+
+  const distanciaLabel3 = useMemo(() => {
+    if (unit === "miles") {
+      const miles = distanciaM3 / 1609.34;
+      return miles >= 0.1
+        ? `${miles.toFixed(2)} mi`
+        : `${(miles * 5280).toFixed(0)} ft`;
+    } else {
+      // default: metros
+      if (distanciaM3 >= 1000) return `${(distanciaM3 / 1000).toFixed(1)} km`;
+      return `${Math.round(distanciaM3)} m`;
+    }
+  }, [distanciaM3, unit]);
 
   const etaLabel = useMemo(() => {
     const d = etaDate || new Date(Date.now() + Math.round(tiempoMin) * 60 * 1000);
     return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).toLowerCase();
   }, [etaDate, tiempoMin]);
+
+  const etaLabel2 = useMemo(() => {
+    const d = etaDate2 || new Date(Date.now() + Math.round(tiempoMin2) * 60 * 1000);
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).toLowerCase();
+  }, [etaDate2, tiempoMin2]);
+
+  const etaLabel3 = useMemo(() => {
+    const d = etaDate3 || new Date(Date.now() + Math.round(tiempoMin3) * 60 * 1000);
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).toLowerCase();
+  }, [etaDate3, tiempoMin3]); 
+
 
   // ---- util interno ----
   async function getUserPosition() {
@@ -527,6 +600,14 @@ export default function useCampusMapController() {
       );
     });
   }
+
+  useEffect(() => {
+    const r = rutasInfo[selectedRouteIndex];
+    if (!r) return;
+    setDistanciaM(r.distanciaM);
+    setTiempoMin(r.tiempoMin);
+    setEtaDate(r.etaDate);
+  }, [selectedRouteIndex, rutasInfo]);
 
   // Limpia todo: texto, ruta, marcadores e info
   const clearSearch = useCallback(() => {
@@ -556,7 +637,13 @@ export default function useCampusMapController() {
     userCoord, setUserCoord,
     accuracyM,
     distanciaM, tiempoMin, etaDate,
+    distanciaM2, tiempoMin2, etaDate2,
+    distanciaM3, tiempoMin3, etaDate3,
     remainingMinutes, distanciaLabel, etaLabel,
+    remainingMinutes2, distanciaLabel2, etaLabel2,
+    remainingMinutes3, distanciaLabel3, etaLabel3,
+    selectedRouteIndex, setSelectedRouteIndex,
+    rutasInfo,
     clearSearch,
 
     // acciones

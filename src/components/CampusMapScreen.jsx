@@ -141,6 +141,8 @@ export default function CampusMapScreen() {
     buscarDestino,
     buscarYRutaDesdeBackend,
     buscarAlternativasDesdeBackend,
+    selectedRouteIndex,
+    setSelectedRouteIndex,
     alternativeRoute,
     alternativeRoutetwo,
     onMarkerClick,
@@ -153,7 +155,12 @@ export default function CampusMapScreen() {
     stopNavigation,
     remainingMinutes, 
     distanciaLabel, 
-    etaLabel, 
+    etaLabel,
+    remainingMinutes2,
+    distanciaLabel2,
+    etaLabel2,
+    remainingMinutes3,
+    distanciaLabel3,
     clearSearch,
     headingRadRef,
     estPosRef,
@@ -246,9 +253,6 @@ export default function CampusMapScreen() {
 
     recognition.start();
   };
-
-
-
 
   const lastPosRef = useRef(null);
   const mapRef = useRef();
@@ -351,37 +355,60 @@ export default function CampusMapScreen() {
 
             {routePoints.length > 0 && (
               <>
-                {/* Ruta principal (azul) */}
-                <Polyline positions={routePoints} color="blue" weight={5} />
-
-                {/* Ruta alternativa (naranjo, punteada) */}
                 {alternativeRoute.length > 0 && (
-                  <Polyline
-                    positions={alternativeRoute}
-                    color="orange"
-                    weight={4}
-                    dashArray="10, 10"
-                    opacity={0.7}
-                  />
+                  <Polyline key={`alt1-${selectedRouteIndex}`} positions={alternativeRoute} color="orange"  weight={selectedRouteIndex === 1 ? 6 : 4} opacity={selectedRouteIndex === 1 ? 1.0 : 0.6} dashArray={selectedRouteIndex === 1 ? null : "10, 10"} eventHandlers={{click: () => setSelectedRouteIndex(1),}}/>
                 )}
                 {alternativeRoutetwo.length > 0 && (
-                  <Polyline
-                    positions={alternativeRoutetwo}
-                    color="red"
-                    weight={4}
-                    dashArray="10, 10"
-                    opacity={0.6}
-                  />
+                  <Polyline key={`alt2-${selectedRouteIndex}`} positions={alternativeRoutetwo} color="red"  weight={selectedRouteIndex === 2 ? 6 : 4} opacity={selectedRouteIndex === 2 ? 1.0 : 0.5} dashArray={selectedRouteIndex === 2 ? null : "10, 10"} eventHandlers={{click: () => setSelectedRouteIndex(2),}}/>
                 )}
+                {/* Ruta principal  */}
+                <Polyline key={`main-${selectedRouteIndex}`} positions={routePoints} color="blue" weight={selectedRouteIndex === 0 ? 6 : 4} opacity={selectedRouteIndex === 0 ? 1.0 : 0.5} dashArray={selectedRouteIndex === 0 ? null : "10, 10"} eventHandlers={{click: () => setSelectedRouteIndex(0),}}/>
 
-                {/* Ajusta el mapa para mostrar ambas rutas */}
-                <FitRoute
-                  points={[...routePoints, ...alternativeRoute, ...alternativeRoutetwo].filter(Boolean)}
+                <FitRoute points={[...routePoints, ...alternativeRoute, ...alternativeRoutetwo].filter(Boolean)} />
+                <Marker
+                  position={routePoints[Math.floor(routePoints.length * 2 / 3)]} // punto medio
+                  icon={L.divIcon({
+                    className: "eta-box",
+                    html: `
+                      <div  class="eta-card min-w-[80px] max-w-[100px] bg-white/90 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
+                        <strong>${remainingMinutes} min</strong><br>
+                        <span>${distanciaLabel}</span><br>
+                      </div>
+                    `,
+                    
+                  },)}
+                  interactive={false}
+                />
+                <Marker
+                  position={alternativeRoute[Math.floor(alternativeRoute.length / 2)]} // punto medio
+                  icon={L.divIcon({
+                    className: "eta-box",
+                    html: `
+                      <div  class="eta-card min-w-[80px] max-w-[100px] bg-orange-500/60 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
+                        <strong>${remainingMinutes2} min</strong><br>
+                        <span>${distanciaLabel2}</span><br>
+                      </div>
+                    `,
+                    
+                  },)}
+                  interactive={false}
+                />
+                <Marker
+                  position={alternativeRoutetwo[Math.floor(alternativeRoutetwo.length / 2)]} // punto medio
+                  icon={L.divIcon({
+                    className: "eta-box",
+                    html: `
+                      <div  class="eta-card min-w-[80px] max-w-[100px] bg-red-500/60 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
+                        <strong>${remainingMinutes3} min</strong><br>
+                        <span>${distanciaLabel3}</span><br>
+                      </div>
+                    `,
+                    
+                  },)}
+                  interactive={false}
                 />
               </>
             )}
-
-
             <HeadingLocationMarkerLion             
             coord={userCoord}
             headingRad={headingRadRef.current || 0}
