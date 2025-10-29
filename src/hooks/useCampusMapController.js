@@ -1,6 +1,7 @@
 // src/hooks/useCampusMapController.js
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppSettings } from "../context/SettingsContext";
+import { generarInstrucciones } from "../utils/instrucciones";
 
 const BASE_URL = process.env.REACT_APP_API_BASE_URL; // <- tu backend
 
@@ -331,9 +332,17 @@ export default function useCampusMapController() {
       const km_3 = dist_3 / 1000;
       const min_3 = (km_3 / 5) * 60;
 
+      const instrucciones1 = generarInstrucciones(ruta1);
+      const instrucciones2 = generarInstrucciones(ruta2);
+      const instrucciones3 = generarInstrucciones(ruta3);
+
       console.log(` Distancia total: ${km_1.toFixed(2)} km, Tiempo estimado: ${min_1.toFixed(1)} min`);
       console.log(` Alternativa 1 - Distancia: ${km_2.toFixed(2)} km, Tiempo: ${min_2.toFixed(1)} min`);
       console.log(` Alternativa 2 - Distancia: ${km_3.toFixed(2)} km, Tiempo: ${min_3.toFixed(1)} min`);
+
+      console.log("Instrucciones ruta principal:", instrucciones1);
+      console.log("Instrucciones alternativa 1:", instrucciones2);
+      console.log("Instrucciones alternativa 2:", instrucciones3);
 
       setDistanciaM(dist_1);
       setTiempoMin(min_1);
@@ -348,9 +357,9 @@ export default function useCampusMapController() {
       setEtaDate3(new Date(Date.now() + Math.round(min_3) * 60 * 1000));
 
       setRutasInfo([
-        { puntos: ruta1, distanciaM: dist_1, tiempoMin: min_1, etaDate: new Date(Date.now() + Math.round(min_1) * 60 * 1000) },
-        { puntos: ruta2, distanciaM: dist_2, tiempoMin: min_2, etaDate: new Date(Date.now() + Math.round(min_2) * 60 * 1000) },
-        { puntos: ruta3, distanciaM: dist_3, tiempoMin: min_3, etaDate: new Date(Date.now() + Math.round(min_3) * 60 * 1000) },
+        { puntos: ruta1, distanciaM: dist_1, tiempoMin: min_1, etaDate: new Date(Date.now() + Math.round(min_1) * 60 * 1000), instrucciones: instrucciones1},
+        { puntos: ruta2, distanciaM: dist_2, tiempoMin: min_2, etaDate: new Date(Date.now() + Math.round(min_2) * 60 * 1000), instrucciones: instrucciones2},
+        { puntos: ruta3, distanciaM: dist_3, tiempoMin: min_3, etaDate: new Date(Date.now() + Math.round(min_3) * 60 * 1000), instrucciones: instrucciones3},
       ]);
 
       // inicializa selección en la principal

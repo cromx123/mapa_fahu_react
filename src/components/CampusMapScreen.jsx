@@ -9,6 +9,13 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
+import {
+  ArrowUp,
+  CornerDownRight,
+  CornerDownLeft,
+  RefreshCw,
+  MapPin,
+} from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import useCampusMap from "../hooks/useCampusMapController";
 import CameraFollow from "./CameraFollow";
@@ -161,6 +168,7 @@ export default function CampusMapScreen() {
     etaLabel2,
     remainingMinutes3,
     distanciaLabel3,
+    rutasInfo,
     clearSearch,
     headingRadRef,
     estPosRef,
@@ -258,6 +266,14 @@ export default function CampusMapScreen() {
   const mapRef = useRef();
   const [speedMps, setSpeedMps] = useState(0);
 
+  const iconMap = {
+    recto: ArrowUp,
+    derecha: CornerDownRight,
+    izquierda: CornerDownLeft,
+    uturn: RefreshCw,
+    llegada: MapPin,
+  };
+
   useEffect(() => {
     if (!userCoord?.lat || !userCoord?.lng) return;
     const now = Date.now();
@@ -314,7 +330,22 @@ export default function CampusMapScreen() {
               distanciaLabel={distanciaLabel}
               etaLabel={etaLabel}
             />
-
+            {rutasInfo[selectedRouteIndex]?.instrucciones?.length > 0 && (
+                  <div className="p-2 bg-white/90 rounded-lg shadow-md max-h-60 overflow-y-auto">
+                    <h3 className="font-semibold mb-2">Instrucciones</h3>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      {rutasInfo[selectedRouteIndex]?.instrucciones?.map((step, i) => {
+                        const Icon = iconMap[step.tipo] || ArrowUp;
+                        return (
+                          <li key={i} className="flex items-center gap-2">
+                            <Icon size={18} className="text-blue-600" />
+                            <span>{step.texto}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
           </div>
         )}
         <div className="flex-1 relative">
@@ -334,6 +365,22 @@ export default function CampusMapScreen() {
                   distanciaLabel={distanciaLabel}
                   etaLabel={etaLabel}
                 />
+                {rutasInfo[selectedRouteIndex]?.instrucciones?.length > 0 && (
+                  <div className="p-2 bg-white/90 rounded-lg shadow-md max-h-60 overflow-y-auto">
+                    <h3 className="font-semibold mb-2">Instrucciones</h3>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      {rutasInfo[selectedRouteIndex]?.instrucciones?.map((step, i) => {
+                        const Icon = iconMap[step.tipo] || ArrowUp;
+                        return (
+                          <li key={i} className="flex items-center gap-2">
+                            <Icon size={18} className="text-blue-600" />
+                            <span>{step.texto}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           <MapContainer
@@ -370,7 +417,7 @@ export default function CampusMapScreen() {
                   icon={L.divIcon({
                     className: "eta-box",
                     html: `
-                      <div  class="eta-card min-w-[80px] max-w-[100px] bg-white/90 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
+                      <div  class="eta-card min-w-[80px] max-w-[100px] bg-blue-400/60 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
                         <strong>${remainingMinutes} min</strong><br>
                         <span>${distanciaLabel}</span><br>
                       </div>
@@ -754,6 +801,7 @@ function PlaceInfoCard({
         </div>
       )}
     </div>
+
   );
 }
 
