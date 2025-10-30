@@ -146,7 +146,8 @@ export default function CampusMapScreen() {
     // acciones
     setQuery,
     buscarDestino,
-    buscarYRutaDesdeBackend,
+    // buscarYRutaDesdeBackend,
+    iniciarNavegacionConRuta,
     buscarAlternativasDesdeBackend,
     selectedRouteIndex,
     setSelectedRouteIndex,
@@ -321,14 +322,18 @@ export default function CampusMapScreen() {
               place={selectedPlace}
               routeAvailable={!!selectedPlace}
               isNavigationActive={isNavigationActive}
-              buscarYRutaDesdeBackend={buscarYRutaDesdeBackend}
+              /* buscarYRutaDesdeBackend={buscarYRutaDesdeBackend} */
               buscarAlternativasDesdeBackend={buscarAlternativasDesdeBackend}
+              onStartWithRoute={iniciarNavegacionConRuta}  
               onStart={startNavigation}
               onStop={stopNavigation}
               onClear={() => { clearSearch(); setSelectedFilter(null); setOpenSugg(false); }}
               remainingMinutes={remainingMinutes}
               distanciaLabel={distanciaLabel}
               etaLabel={etaLabel}
+              rutasInfo={rutasInfo}
+              selectedRouteIndex={selectedRouteIndex}
+
             />
             {rutasInfo[selectedRouteIndex]?.instrucciones?.length > 0 && (
                   <div className="p-2 bg-white/90 rounded-lg shadow-md max-h-60 overflow-y-auto">
@@ -356,30 +361,34 @@ export default function CampusMapScreen() {
                   place={selectedPlace}
                   routeAvailable={!!selectedPlace}
                   isNavigationActive={isNavigationActive}
-                  buscarYRutaDesdeBackend={buscarYRutaDesdeBackend}
+                  // buscarYRutaDesdeBackend={buscarYRutaDesdeBackend}
                   buscarAlternativasDesdeBackend={buscarAlternativasDesdeBackend}
+                  onStartWithRoute={iniciarNavegacionConRuta}  
                   onStart={startNavigation}
                   onStop={stopNavigation}
                   onClear={() => { clearSearch(); setSelectedFilter(null); setOpenSugg(false); }}
                   remainingMinutes={remainingMinutes}
                   distanciaLabel={distanciaLabel}
                   etaLabel={etaLabel}
+                  rutasInfo={rutasInfo}
+                  selectedRouteIndex={selectedRouteIndex}
                 />
-                {rutasInfo[selectedRouteIndex]?.instrucciones?.length > 0 && (
-                  <div className="p-2 bg-white/90 rounded-lg shadow-md max-h-60 overflow-y-auto">
-                    <h3 className="font-semibold mb-2">Instrucciones</h3>
-                    <ul className="list-disc list-inside space-y-1 text-sm">
-                      {rutasInfo[selectedRouteIndex]?.instrucciones?.map((step, i) => {
-                        const Icon = iconMap[step.tipo] || ArrowUp;
-                        return (
-                          <li key={i} className="flex items-center gap-2">
-                            <Icon size={18} className="text-blue-600" />
-                            <span>{step.texto}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
+                {isNavigationActive &&
+                  rutasInfo[selectedRouteIndex]?.instrucciones?.length > 0 && (
+                    <div className="p-2 bg-white/90 rounded-lg shadow-md max-h-60 overflow-y-auto">
+                      <h3 className="font-semibold mb-2">Instrucciones</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        {rutasInfo[selectedRouteIndex]?.instrucciones?.map((step, i) => {
+                          const Icon = iconMap[step.tipo] || ArrowUp;
+                          return (
+                            <li key={i} className="flex items-center gap-2">
+                              <Icon size={18} className="text-blue-600" />
+                              <span>{step.texto}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                 )}
               </div>
             )}
@@ -411,49 +420,55 @@ export default function CampusMapScreen() {
                 {/* Ruta principal  */}
                 <Polyline key={`main-${selectedRouteIndex}`} positions={routePoints} color="blue" weight={selectedRouteIndex === 0 ? 6 : 4} opacity={selectedRouteIndex === 0 ? 1.0 : 0.5} dashArray={selectedRouteIndex === 0 ? null : "10, 10"} eventHandlers={{click: () => setSelectedRouteIndex(0),}}/>
 
-                <FitRoute points={[...routePoints, ...alternativeRoute, ...alternativeRoutetwo].filter(Boolean)} />
-                <Marker
-                  position={routePoints[Math.floor(routePoints.length * 2 / 3)]} // punto medio
-                  icon={L.divIcon({
-                    className: "eta-box",
-                    html: `
-                      <div  class="eta-card min-w-[80px] max-w-[100px] bg-blue-400/60 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
-                        <strong>${remainingMinutes} min</strong><br>
-                        <span>${distanciaLabel}</span><br>
-                      </div>
-                    `,
-                    
-                  },)}
-                  interactive={false}
-                />
-                <Marker
-                  position={alternativeRoute[Math.floor(alternativeRoute.length / 2)]} // punto medio
-                  icon={L.divIcon({
-                    className: "eta-box",
-                    html: `
-                      <div  class="eta-card min-w-[80px] max-w-[100px] bg-orange-500/60 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
-                        <strong>${remainingMinutes2} min</strong><br>
-                        <span>${distanciaLabel2}</span><br>
-                      </div>
-                    `,
-                    
-                  },)}
-                  interactive={false}
-                />
-                <Marker
-                  position={alternativeRoutetwo[Math.floor(alternativeRoutetwo.length / 2)]} // punto medio
-                  icon={L.divIcon({
-                    className: "eta-box",
-                    html: `
-                      <div  class="eta-card min-w-[80px] max-w-[100px] bg-red-500/60 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
-                        <strong>${remainingMinutes3} min</strong><br>
-                        <span>${distanciaLabel3}</span><br>
-                      </div>
-                    `,
-                    
-                  },)}
-                  interactive={false}
-                />
+                <FitRoute points={[...routePoints, ...alternativeRoute, ...alternativeRoutetwo].filter((p) => Array.isArray(p) && p.length === 2)} />
+                {routePoints.length > 1 &&(
+                  <Marker
+                    position={routePoints[Math.floor(routePoints.length * 2 / 3)]} // punto medio
+                    icon={L.divIcon({
+                      className: "eta-box",
+                      html: `
+                        <div  class="eta-card min-w-[80px] max-w-[100px] bg-blue-400/60 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
+                          <strong>${remainingMinutes} min</strong><br>
+                          <span>${distanciaLabel}</span><br>
+                        </div>
+                      `,
+                      
+                    },)}
+                    interactive={false}
+                  />
+                )}
+                {alternativeRoute.length > 1 && (
+                  <Marker
+                    position={alternativeRoute[Math.floor(alternativeRoute.length / 2)]} // punto medio
+                    icon={L.divIcon({
+                      className: "eta-box",
+                      html: `
+                        <div  class="eta-card min-w-[80px] max-w-[100px] bg-orange-500/60 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
+                          <strong>${remainingMinutes2} min</strong><br>
+                          <span>${distanciaLabel2}</span><br>
+                        </div>
+                      `,
+                      
+                    },)}
+                    interactive={false}
+                  />
+                )}
+                {alternativeRoutetwo.length > 1 && (
+                  <Marker
+                    position={alternativeRoutetwo[Math.floor(alternativeRoutetwo.length / 2)]} // punto medio
+                    icon={L.divIcon({
+                      className: "eta-box",
+                      html: `
+                        <div  class="eta-card min-w-[80px] max-w-[100px] bg-red-500/60 backdrop-blur border border-gray-300 rounded-lg p-1 text-center shadow-lg">
+                          <strong>${remainingMinutes3} min</strong><br>
+                          <span>${distanciaLabel3}</span><br>
+                        </div>
+                      `,
+                      
+                    },)}
+                    interactive={false}
+                  />
+                )}
               </>
             )}
             <HeadingLocationMarkerLion             
@@ -653,15 +668,18 @@ export default function CampusMapScreen() {
 function PlaceInfoCard({
   place,
   routeAvailable,
-  buscarYRutaDesdeBackend,
+  // buscarYRutaDesdeBackend,
   buscarAlternativasDesdeBackend,
   isNavigationActive,
+  selectedRouteIndex,
   onStart,
+  onStartWithRoute,
   onStop,
   onClear,
   remainingMinutes,
   distanciaLabel,
   etaLabel,
+  rutasInfo,
 }) {
   const { t } = useAppSettings();
 
@@ -776,21 +794,36 @@ function PlaceInfoCard({
         <div className="mt-4 flex items-center justify-between">
           <button
             onClick={() => {
-              if (place) {
-                buscarYRutaDesdeBackend(place.name); // ← recién aquí traza ruta
+              if (isNavigationActive) {
+                console.log("[BOTÓN] 🛑 Deteniendo navegación");
+                onStop?.();
+              } else {
+                const rutaSeleccionada = rutasInfo?.[selectedRouteIndex];
+                if (rutaSeleccionada) {
+                  console.log("[BOTÓN] 🚀 Iniciando ruta:", rutaSeleccionada);
+                  onStartWithRoute?.(rutaSeleccionada, {
+                    index: selectedRouteIndex,
+                    dest: place,
+                  });
+                  onStart?.(); // <-- activa el estado global si lo necesitas
+                } else {
+                  console.warn("[BOTÓN] No hay ruta seleccionada");
+                }
               }
             }}
             disabled={!routeAvailable}
-            className={
-              "rounded-xl px-4 py-2 font-semibold " +
-              (routeAvailable
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed")
-            }
-            title="Iniciar ruta"
+            className={`rounded-xl px-4 py-2 font-semibold ${
+              routeAvailable
+                ? isNavigationActive
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+            }`}
+            title={isNavigationActive ? "Detener ruta" : "Iniciar ruta"}
           >
-            {t("cms_btn_start")}
+            {isNavigationActive ? t("cms_btn_stop") : t("cms_btn_start")}
           </button>
+
           {/* Botón ¿Cómo llegar? */}
           <button
             onClick={() => buscarAlternativasDesdeBackend(place.name)}
