@@ -15,6 +15,11 @@ import {
   CornerDownLeft,
   RefreshCw,
   MapPin,
+  Share2,
+  Bookmark,
+  Square,
+  Play,
+  Route,
 } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import useCampusMap from "../hooks/useCampusMapController";
@@ -665,6 +670,43 @@ export default function CampusMapScreen() {
   );
 }
 
+function ActionChip({
+  icon: Icon,
+  label,
+  onClick,
+  disabled = false,
+  variant = "primary", // "primary" | "muted" | "accent" | "danger"
+}) {
+  const styles = {
+    primary:
+      "bg-cyan-600 text-white hover:bg-cyan-700 active:bg-cyan-800 dark:bg-cyan-500 dark:hover:bg-cyan-600",
+    muted:
+      "bg-gray-100 text-gray-800 hover:bg-gray-200 active:bg-gray-300 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700",
+    accent:
+      "bg-blue-100 text-blue-900 hover:bg-blue-200 active:bg-blue-300 dark:bg-blue-900/40 dark:text-blue-100 dark:hover:bg-blue-900/60",
+    danger:
+      "bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 dark:bg-rose-500 dark:hover:bg-rose-600",
+  }[variant];
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        "group inline-flex items-center gap-2 rounded-2xl px-4 h-11",
+        "font-semibold text-sm tracking-tight",
+        "shadow-sm hover:shadow transition-all",
+        "ring-1 ring-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/30",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        styles,
+      ].join(" ")}
+    >
+      <Icon size={18} className="shrink-0" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
 function PlaceInfoCard({
   place,
   routeAvailable,
@@ -791,46 +833,68 @@ function PlaceInfoCard({
           </div>
         </div>
       ) : (
-        <div className="mt-4 flex items-center justify-between">
-          <button
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {/* Cómo llegar */}
+          <ActionChip
+            icon={Route}
+            label="Cómo llegar"
+            variant="primary"
+            onClick={() => buscarAlternativasDesdeBackend(place?.name)}
+          />
+
+          {/* Iniciar / Detener */}
+          <ActionChip
+            icon={isNavigationActive ? Square : Play}
+            label={isNavigationActive ? "Detener" : "Iniciar"}
+            variant={isNavigationActive ? "danger" : "muted"}
+            disabled={!routeAvailable}
             onClick={() => {
               if (isNavigationActive) {
-                console.log("[BOTÓN] 🛑 Deteniendo navegación");
                 onStop?.();
               } else {
                 const rutaSeleccionada = rutasInfo?.[selectedRouteIndex];
-                if (rutaSeleccionada) {
-                  console.log("[BOTÓN] 🚀 Iniciando ruta:", rutaSeleccionada);
-                  onStartWithRoute?.(rutaSeleccionada, {
-                    index: selectedRouteIndex,
-                    dest: place,
-                  });
-                  onStart?.(); // <-- activa el estado global si lo necesitas
-                } else {
-                  console.warn("[BOTÓN] No hay ruta seleccionada");
-                }
+                if (!rutaSeleccionada) return;
+                onStartWithRoute?.(rutaSeleccionada, { index: selectedRouteIndex, dest: place });
+                onStart?.();
               }
             }}
-            disabled={!routeAvailable}
-            className={`rounded-xl px-4 py-2 font-semibold ${
-              routeAvailable
-                ? isNavigationActive
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-            }`}
-            title={isNavigationActive ? "Detener ruta" : "Iniciar ruta"}
-          >
-            {isNavigationActive ? t("cms_btn_stop") : t("cms_btn_start")}
-          </button>
+          />
 
-          {/* Botón ¿Cómo llegar? */}
-          <button
-            onClick={() => buscarAlternativasDesdeBackend(place.name)}
-            className="px-2 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700"
-          >
-            ¿Cómo llegar?
-          </button>
+          {/* Guardar */}
+          <ActionChip
+            icon={Bookmark}
+            label="Guardar"
+            variant="accent"
+            onClick={() => {
+              if (!place) return alert("No hay destino seleccionado");
+              const favoritos = JSON.parse(localStorage.getItem("favoritos") || "[]");
+              if (!favoritos.some((f) => f.id === place.id)) {
+                favoritos.push(place);
+                localStorage.setItem("favoritos", JSON.stringify(favoritos));
+                // toast/alert discreto
+              } else {
+                // ya existe
+              }
+            }}
+          />
+
+          {/* Compartir */}
+          <ActionChip
+            icon={Share2}
+            label="Compartir"
+            variant="muted"
+            onClick={async () => {
+              if (!place) return alert("No hay destino seleccionado");
+              const url = `${window.location.origin}?lat=${place.lat}&lng=${place.lng}`;
+              const shareData = { title: `Destino: ${place.name}`, text: place.name, url };
+              if (navigator.share) {
+                try { await navigator.share(shareData); } catch {}
+              } else {
+                await navigator.clipboard.writeText(url);
+                // toast/alert discreto
+              }
+            }}
+          />
         </div>
       )}
     </div>
