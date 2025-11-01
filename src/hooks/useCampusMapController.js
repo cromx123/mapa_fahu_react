@@ -30,8 +30,10 @@ export default function useCampusMapController() {
   const headingRadRef = useRef(0);         // rumbo (rad)
   const lastGyroTsRef = useRef(null);      // timestamp p/ integración simple
   const lastRerouteTsRef = useRef(0);      // cooldown p/ re-ruta
-  const rerouteCooldownMs = 6000;
-  const deviationThresholdM = 0.5; // como en Flutter
+  const rerouteCooldownMs = 5000;
+  const deviationThresholdM = 0.5; 
+  const lastSpeedCalcRef = useRef({ t: 0, lat: null, lng: null, speedMps: 0 });
+
   
   const [userCoord, setUserCoord] = useState(null); // {lat, lng}
   const [accuracyM, setAccuracyM] = useState(20);
@@ -185,54 +187,120 @@ export default function useCampusMapController() {
   }, []);
 
   // ---- Buscar y trazar ruta desde backend ----
-  const buscarYRutaDesdeBackend = useCallback(async (texto) => {
-    try {
-      const q = (texto ?? "").trim();
-      if (!q) return;
+  // const buscarYRutaDesdeBackend = useCallback(async (texto) => {
+  //   try {
+  //     const q = (texto ?? "").trim();
+  //     if (!q) return;
 
-      // 1) Buscar por nombre (category=name)
-      const r1 = await fetch(
-        `${BASE_URL}/destinos?query=${encodeURIComponent(q)}&category=name`
-      );
-      if (!r1.ok) return;
-      const j1 = await r1.json();
-      const item = j1?.items?.[0];
-      if (!item) return;
+  //     // 1) Buscar por nombre (category=name)
+  //     const r1 = await fetch(
+  //       `${BASE_URL}/destinos?query=${encodeURIComponent(q)}&category=name`
+  //     );
+  //     if (!r1.ok) return;
+  //     const j1 = await r1.json();
+  //     const item = j1?.items?.[0];
+  //     if (!item) return;
 
-      const dest = {
-        id: item.id,
-        name: item.nombre || "",
-        type: item.tipo || "",
-        sector: item.sector || "",
-        floor: item.nivel || "",
-        lat: item.lat, lng: item.lng,
-      };
+  //     const dest = {
+  //       id: item.id,
+  //       name: item.nombre || "",
+  //       type: item.tipo || "",
+  //       sector: item.sector || "",
+  //       floor: item.nivel || "",
+  //       lat: item.lat, lng: item.lng,
+  //     };
 
-      const pos = await getUserPosition();
-      if (!pos) return;
-      userPosRef.current = pos;
-      setUserCoord({ lat: pos.lat, lng: pos.lng });
-      if (!estPosRef.current) estPosRef.current = [pos.lat, pos.lng];
+  //     const pos = await getUserPosition();
+  //     if (!pos) return;
+  //     userPosRef.current = pos;
+  //     setUserCoord({ lat: pos.lat, lng: pos.lng });
+  //     if (!estPosRef.current) estPosRef.current = [pos.lat, pos.lng];
 
-      const r2 = await fetch(
-        `${BASE_URL}/ruta_desde_ubicacion?lat=${pos.lat}&lng=${pos.lng}&destino=${encodeURIComponent(dest.id)}`
-      );
-      if (!r2.ok) { setRoutePoints([]); return; }
-      const j2 = await r2.json();
-      const ruta = (j2.ruta || []).map((p) => [p.lat, p.lng]);
-      setRoutePoints(ruta);
-      setSelectedPlace(dest);
-      setIsInfoCardVisible(true);
-      setMarkers(ruta.length ? [{ id: dest.id, name: dest.name, type: dest.type, lat: ruta.at(-1)[0], lng: ruta.at(-1)[1] }] : []);
+  //     const r2 = await fetch(
+  //       `${BASE_URL}/ruta_desde_ubicacion?lat=${pos.lat}&lng=${pos.lng}&destino=${encodeURIComponent(dest.id)}`
+  //     );
+  //     if (!r2.ok) { setRoutePoints([]); return; }
+  //     const j2 = await r2.json();
+  //     const ruta = (j2.ruta || []).map((p) => [p.lat, p.lng]);
+  //     setRoutePoints(ruta);
+  //     setSelectedPlace(dest);
+  //     setIsInfoCardVisible(true);
+  //     setMarkers(ruta.length ? [{ id: dest.id, name: dest.name, type: dest.type, lat: ruta.at(-1)[0], lng: ruta.at(-1)[1] }] : []);
 
-      const dist = Number(j2.distancia_total_metros ?? j2.distancia_m ?? 0);
-      const km = dist / 1000, min = (km / 5) * 60;
-      setDistanciaM(dist); setTiempoMin(min);
-      setEtaDate(new Date(Date.now() + Math.round(min) * 60 * 1000));
-      setFollowUser(true); setIsNavigationActive(true);
-    } catch {}
-  }, []);
+  //     const dist = Number(j2.distancia_total_metros ?? j2.distancia_m ?? 0);
+  //     const km = dist / 1000, min = (km / 5) * 60;
+  //     setDistanciaM(dist); setTiempoMin(min);
+  //     setEtaDate(new Date(Date.now() + Math.round(min) * 60 * 1000));
+  //     setFollowUser(true); setIsNavigationActive(true);
+  //   } catch {}
+  // }, []);
+  // NUEVO: iniciar navegación con la ruta YA seleccionada
+  const iniciarNavegacionConRuta = useCallback((rutaObj, meta = {}) => {
+    if (!rutaObj) return;
 
+    // Acepta ambos formatos: {ruta:[...]} o {puntos:[...]}
+    const pts = rutaObj.puntos || rutaObj.ruta || [];
+    if (!Array.isArray(pts) || pts.length === 0) return;
+
+    // 🧹 Limpiar alternativas y dejar solo la activa
+    setAlternativeRoute([]);
+    setAlternativeRoutetwo([]);
+
+    // Normaliza distancia y tiempo desde cualquiera de los formatos
+    const dist =
+      rutaObj.distanciaM ??
+      rutaObj.distancia_m ??
+      rutaObj.distancia_total_metros ??
+      0;
+
+    const min =
+      rutaObj.tiempoMin ??
+      rutaObj.duracion_min ??
+      Math.round(((dist / 1000) / 5) * 60);
+
+    // Si no vienen instrucciones, las generamos
+    const instrucciones = rutaObj.instrucciones || generarInstrucciones(pts);
+
+    // Coloca la ruta activa como única en rutasInfo
+    setRutasInfo([{
+      puntos: pts,
+      distanciaM: dist,
+      tiempoMin: min,
+      etaDate: new Date(Date.now() + Math.round(min) * 60 * 1000),
+      instrucciones,
+    }]);
+
+    setSelectedRouteIndex(0);
+
+    // Destino
+    const dest = meta.dest || selectedPlace || null;
+    if (dest) setSelectedPlace(dest);
+
+    // Marcador final
+    const end = pts.at(-1);
+    setMarkers([{
+      id: dest?.id ?? "dest",
+      name: dest?.name ?? "Destino",
+      type: dest?.type ?? "",
+      lat: end[0],
+      lng: end[1],
+    }]);
+
+    // Distancia/tiempo/ETA visibles
+    setRoutePoints(pts);
+    setDistanciaM(dist);
+    setTiempoMin(min);
+    setEtaDate(new Date(Date.now() + min * 60 * 1000));
+
+    // Activar navegación y seguir usuario
+    setFollowUser(true);
+    setIsNavigationActive(true);
+
+    console.log("✅ Navegación iniciada con la ruta seleccionada");
+  }, [selectedPlace]);
+
+
+  
   const buscarAlternativasDesdeBackend = useCallback(async (texto) => {
     try {
       const q = (texto ?? "").trim();
@@ -424,6 +492,22 @@ export default function useCampusMapController() {
         const w = weightFromAccuracy(p.accuracy);
         const [elat, elng] = estPosRef.current;
         estPosRef.current = [elat * (1 - w) + p.lat * w, elng * (1 - w) + p.lng * w];
+        // calcular speedMps interno (simple)
+        const now = Date.now();
+        const last = lastSpeedCalcRef.current;
+        if (last.lat != null && last.lng != null) {
+          const R = 6378137;
+          const toRad = d => (d * Math.PI) / 180;
+          const dLat = toRad(p.lat - last.lat);
+          const dLng = toRad(p.lng - last.lng);
+          const a = Math.sin(dLat/2)**2 + Math.cos(toRad(last.lat)) * Math.cos(toRad(p.lat)) * Math.sin(dLng/2)**2;
+          const d = 2 * R * Math.asin(Math.sqrt(a));
+          const dt = (now - last.t) / 1000;
+          if (dt > 0.2 && d < 200) { // filtros anti-ruido
+            last.speedMps = 0.85 * last.speedMps + 0.15 * (d / dt);
+          }
+        }
+        lastSpeedCalcRef.current = { t: now, lat: p.lat, lng: p.lng, speedMps: last.speedMps };
 
         // re-cámara si seguimos al usuario (sin rotación de mapa)
         if (followUser && isNavigationActive) {
@@ -447,7 +531,7 @@ export default function useCampusMapController() {
                   setRoutePoints(ruta);
                   const dist = Number(j2.distancia_total_metros ?? j2.distancia_m ?? 0);
                   const km = dist / 1000;
-                  const velocidadKmH = 5.0;
+                  const velocidadKmH = Math.max(lastSpeedCalcRef.current.speedMps * 3.6, 1.0);
                   const horas = km / velocidadKmH;
                   const minutos = horas * 60.0;
                   setDistanciaM(dist);
@@ -657,7 +741,8 @@ export default function useCampusMapController() {
 
     // acciones
     filterSuggestions,
-    buscarYRutaDesdeBackend,
+    // buscarYRutaDesdeBackend,
+    iniciarNavegacionConRuta,
     buscarAlternativasDesdeBackend,
     buscarDestino,  
     mostrar_busqueda,
