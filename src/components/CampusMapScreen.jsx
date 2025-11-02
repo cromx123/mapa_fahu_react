@@ -180,8 +180,8 @@ export default function CampusMapScreen() {
     estPosRef,
     offsetMeters,
     focusCoord,
-    favoritos,
-    setFavoritos,
+    isFavorito,
+    toggleFavorito,
   } = useCampusMap();
 
   const inputRef = useRef(null);
@@ -340,8 +340,8 @@ export default function CampusMapScreen() {
               etaLabel={etaLabel}
               rutasInfo={rutasInfo}
               selectedRouteIndex={selectedRouteIndex}
-              favoritos={favoritos}
-              setFavorite={setFavoritos}
+              isFavorito={isFavorito}
+              toggleFavorito={toggleFavorito}
             />
             {rutasInfo[selectedRouteIndex]?.instrucciones?.length > 0 && (
                   <div className="p-2 bg-white/90 rounded-lg shadow-md max-h-60 overflow-y-auto">
@@ -380,8 +380,8 @@ export default function CampusMapScreen() {
                   etaLabel={etaLabel}
                   rutasInfo={rutasInfo}
                   selectedRouteIndex={selectedRouteIndex}
-                  favoritos={favoritos}
-                  setFavorite={setFavoritos}
+                  isFavorito={isFavorito}
+                  toggleFavorito={toggleFavorito}
                 />
                 {isNavigationActive &&
                   rutasInfo[selectedRouteIndex]?.instrucciones?.length > 0 && (
@@ -727,8 +727,8 @@ function PlaceInfoCard({
   distanciaLabel,
   etaLabel,
   rutasInfo,
-  favoritos,
-  setFavorite,
+  isFavorito,
+  toggleFavorito,
 }) {
   const { t } = useAppSettings();
 
@@ -741,30 +741,6 @@ function PlaceInfoCard({
   // const imageUrl = photoRef
   //   ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${apiKey}`
   //   : defaultImage;
-
-  const toggleFavorito = () => {
-    if (!place?.id) return;
-    const favs = JSON.parse(localStorage.getItem("favoritos") || "[]");
-    if (favoritos) {
-      const updated = favs.filter((f) => f.id !== place.id);
-      localStorage.setItem("favoritos", JSON.stringify(updated));
-      setFavorite(false);
-      window.dispatchEvent(new Event("favoritosActualizados"));
-    } else {
-      const nuevo = {
-        id: place.id,
-        name: place.name,
-        lat: place.lat,
-        lng: place.lng,
-        type: place.type,
-        sector: place.sector,
-      };
-      const updated = [...favs.filter((f) => f.id !== place.id), nuevo];
-      localStorage.setItem("favoritos", JSON.stringify(updated));
-      setFavorite(true);
-      window.dispatchEvent(new Event("favoritosActualizados"));
-    }
-  };
 
   return (
     <div className="bg-white/95 backdrop-blur rounded-2xl shadow p-4 w-full max-w-[340px] border">
@@ -889,10 +865,10 @@ function PlaceInfoCard({
           />
 
           <ActionChip
-            icon={favoritos ? BookmarkX : Bookmark} 
-            label={favoritos ? "Quitar" : "Guardar"}
-            variant={favoritos ? "danger" : "accent"}
-            onClick={toggleFavorito}
+            icon={isFavorito(place?.id) ? BookmarkX : Bookmark}
+            label={isFavorito(place?.id) ? "Quitar" : "Guardar"}
+            variant={isFavorito(place?.id) ? "danger" : "accent"}
+            onClick={() => toggleFavorito(place)}
           />
 
           <ActionChip
