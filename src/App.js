@@ -10,6 +10,7 @@ import FormularioCAEScreen from "./components/FormularioCaeScreen";
 import ConfirmarFormScreen from "./components/ConfirmarFormularioScreen";
 import SugerenciasScreen from "./components/FeedbackScreen";
 import EstadosSolicitudesScreen from "./components/EstadoSolicitudScreen";
+import FavoritosScreen from "./components/FavoritosScreen";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/servicios" element={<ServiciosScreen />} />
         <Route path="/convocatorias" element={<ConvocatoriasScreen />} />
+        <Route path="/favoritos" element={<FavoritosScreen/>}/>
         <Route path="/solicitudes_screen" element={<SolicitudesScreen/>} />
         <Route path="/formulario_cae" element={<FormularioCAEScreen/>} />
         <Route path="/confirmar_formulario" element={<ConfirmarFormScreen />} />

@@ -23,6 +23,7 @@ export default function useCampusMapController() {
   const [isNavigationActive, setIsNavigationActive] = useState(false);
   const [followUser, setFollowUser] = useState(false);
   const HARD_LOCK_CENTER = false;
+
   // Posición y heading “fusionados”
   const userPosRef = useRef(null);         // {lat, lng, accuracy}
   const estPosRef  = useRef(null);         // posición “suavizada”
@@ -33,7 +34,7 @@ export default function useCampusMapController() {
   const rerouteCooldownMs = 5000;
   const deviationThresholdM = 0.5; 
   const lastSpeedCalcRef = useRef({ t: 0, lat: null, lng: null, speedMps: 0 });
-
+  const [favoritos, setFavoritos] = useState([]);
   
   const [userCoord, setUserCoord] = useState(null); // {lat, lng}
   const [accuracyM, setAccuracyM] = useState(20);
@@ -702,6 +703,16 @@ export default function useCampusMapController() {
     setEtaDate(r.etaDate);
   }, [selectedRouteIndex, rutasInfo]);
 
+  useEffect(() => {
+    const handleFocus = () => {
+      const guardados = JSON.parse(localStorage.getItem("favoritos") || "[]");
+      setFavoritos(guardados);
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+
   // Limpia todo: texto, ruta, marcadores e info
   const clearSearch = useCallback(() => {
     setQuery("");
@@ -738,6 +749,9 @@ export default function useCampusMapController() {
     selectedRouteIndex, setSelectedRouteIndex,
     rutasInfo,
     clearSearch,
+
+    favoritos,
+    setFavoritos,
 
     // acciones
     filterSuggestions,
