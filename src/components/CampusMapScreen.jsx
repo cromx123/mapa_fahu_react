@@ -17,6 +17,7 @@ import {
   MapPin,
   Share2,
   Bookmark,
+  BookmarkX,
   Square,
   Play,
   Route,
@@ -171,7 +172,6 @@ export default function CampusMapScreen() {
     etaLabel,
     remainingMinutes2,
     distanciaLabel2,
-    etaLabel2,
     remainingMinutes3,
     distanciaLabel3,
     rutasInfo,
@@ -180,6 +180,8 @@ export default function CampusMapScreen() {
     estPosRef,
     offsetMeters,
     focusCoord,
+    isFavorito,
+    toggleFavorito,
   } = useCampusMap();
 
   const inputRef = useRef(null);
@@ -338,7 +340,8 @@ export default function CampusMapScreen() {
               etaLabel={etaLabel}
               rutasInfo={rutasInfo}
               selectedRouteIndex={selectedRouteIndex}
-
+              isFavorito={isFavorito}
+              toggleFavorito={toggleFavorito}
             />
             {rutasInfo[selectedRouteIndex]?.instrucciones?.length > 0 && (
                   <div className="p-2 bg-white/90 rounded-lg shadow-md max-h-60 overflow-y-auto">
@@ -377,6 +380,8 @@ export default function CampusMapScreen() {
                   etaLabel={etaLabel}
                   rutasInfo={rutasInfo}
                   selectedRouteIndex={selectedRouteIndex}
+                  isFavorito={isFavorito}
+                  toggleFavorito={toggleFavorito}
                 />
                 {isNavigationActive &&
                   rutasInfo[selectedRouteIndex]?.instrucciones?.length > 0 && (
@@ -722,6 +727,8 @@ function PlaceInfoCard({
   distanciaLabel,
   etaLabel,
   rutasInfo,
+  isFavorito,
+  toggleFavorito,
 }) {
   const { t } = useAppSettings();
 
@@ -734,7 +741,6 @@ function PlaceInfoCard({
   // const imageUrl = photoRef
   //   ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${apiKey}`
   //   : defaultImage;
-
 
   return (
     <div className="bg-white/95 backdrop-blur rounded-2xl shadow p-4 w-full max-w-[340px] border">
@@ -834,7 +840,6 @@ function PlaceInfoCard({
         </div>
       ) : (
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          {/* Cómo llegar */}
           <ActionChip
             icon={Route}
             label="Cómo llegar"
@@ -842,7 +847,6 @@ function PlaceInfoCard({
             onClick={() => buscarAlternativasDesdeBackend(place?.name)}
           />
 
-          {/* Iniciar / Detener */}
           <ActionChip
             icon={isNavigationActive ? Square : Play}
             label={isNavigationActive ? "Detener" : "Iniciar"}
@@ -860,25 +864,13 @@ function PlaceInfoCard({
             }}
           />
 
-          {/* Guardar */}
           <ActionChip
-            icon={Bookmark}
-            label="Guardar"
-            variant="accent"
-            onClick={() => {
-              if (!place) return alert("No hay destino seleccionado");
-              const favoritos = JSON.parse(localStorage.getItem("favoritos") || "[]");
-              if (!favoritos.some((f) => f.id === place.id)) {
-                favoritos.push(place);
-                localStorage.setItem("favoritos", JSON.stringify(favoritos));
-                // toast/alert discreto
-              } else {
-                // ya existe
-              }
-            }}
+            icon={isFavorito(place?.id) ? BookmarkX : Bookmark}
+            label={isFavorito(place?.id) ? "Quitar" : "Guardar"}
+            variant={isFavorito(place?.id) ? "danger" : "accent"}
+            onClick={() => toggleFavorito(place)}
           />
 
-          {/* Compartir */}
           <ActionChip
             icon={Share2}
             label="Compartir"
@@ -891,7 +883,6 @@ function PlaceInfoCard({
                 try { await navigator.share(shareData); } catch {}
               } else {
                 await navigator.clipboard.writeText(url);
-                // toast/alert discreto
               }
             }}
           />

@@ -226,7 +226,7 @@ export default function ConfigScreen() {
           icon="💾"
           color="#06b6d4"
           title={t("cs_savedRoutes")}
-          onClick={() => alert("Ir a trayectos guardados")}
+          onClick={() => navigate("/favoritos")}
         />
 
         <ConfigCard

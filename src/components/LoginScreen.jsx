@@ -1,35 +1,35 @@
 // src/components/LoginScreen.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import useAuth from "../hooks/userAuth";
 
 export default function LoginScreen() {
   const navigate = useNavigate();
+  const { login, loading } = useAuth();
 
-  const [email, setEmail] = useState("");
+  const [rut, setRut] = useState("");
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const [errors, setErrors] = useState({ email: "", pwd: "" });
+  const [errors, setErrors] = useState({ rut: "", pwd: "" });
   const [snack, setSnack] = useState("");
 
   const validate = () => {
     let ok = true;
-    const next = { email: "", pwd: "" };
+    const next = { rut: "", pwd: "" };
 
-    if (!email.trim()) {
-      next.email = "Por favor ingresa tu email";
+    // Validar RUT
+    if (!rut.trim()) {
+      next.rut = "Por favor ingresa tu RUT";
       ok = false;
-    } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email.trim())) {
-      next.email = "Email no válido";
+    } else if (!/^[0-9]+[-|‐]?[0-9kK]$/.test(rut.trim())) {
+      next.rut = "RUT no válido";
       ok = false;
     }
 
+    // Validar contraseña
     if (!pwd) {
       next.pwd = "Por favor ingresa tu contraseña";
-      ok = false;
-    } else if (pwd.length < 6) {
-      next.pwd = "Mínimo 6 caracteres";
       ok = false;
     }
 
@@ -38,23 +38,29 @@ export default function LoginScreen() {
   };
 
   const onSubmit = async (e) => {
-    e?.preventDefault?.();
+    e.preventDefault();
     if (!validate()) return;
 
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    setLoading(false);
+    const result = await login(rut, pwd);
 
-    setSnack(`Bienvenido ${email}`);
-    setTimeout(() => {
-      setSnack("");
-      navigate("/solicitudes_screen", { replace: true });
-    }, 1200);
+    if (result?.redirectVerify) {
+      navigate("/verificar-cuenta");
+      return;
+    }
+
+    if (result?.error) {
+      setSnack(result.error);
+      return;
+    }
+
+    // Si login OK → redirige
+    navigate("/solicitudes_screen", { replace: true });
   };
 
   return (
     <div className="min-h-screen w-full bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       <div className="mx-auto max-w-xl px-6 py-10">
+
         {/* Icono */}
         <div className="flex justify-center">
           <div className="w-24 h-24 rounded-full bg-emerald-500 text-white grid place-items-center text-6xl">
@@ -67,26 +73,26 @@ export default function LoginScreen() {
 
         {/* Form */}
         <form className="mt-10 space-y-4" onSubmit={onSubmit} noValidate>
-          {/* Email */}
+
+          {/* RUT */}
           <div>
             <div
               className={`flex items-center gap-2 rounded-md border px-3 py-2 
-                bg-purple-50/40 dark:bg-gray-800
-                ${errors.email ? "border-rose-400" : "border-purple-200 dark:border-gray-700"}
+              bg-purple-50/40 dark:bg-gray-800
+              ${errors.rut ? "border-rose-400" : "border-purple-200 dark:border-gray-700"}
               `}
             >
-              <span className="text-gray-700 dark:text-gray-300">✉️</span>
+              <span className="text-gray-700 dark:text-gray-300">🪪</span>
               <input
-                type="email"
-                autoComplete="email"
-                placeholder="Email"
+                type="text"
+                placeholder="RUT (ej: 11111111-1)"
                 className="w-full bg-transparent outline-none text-gray-900 dark:text-gray-100"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={rut}
+                onChange={(e) => setRut(e.target.value)}
               />
             </div>
-            {errors.email && (
-              <p className="text-sm text-rose-600 mt-1">{errors.email}</p>
+            {errors.rut && (
+              <p className="text-sm text-rose-600 mt-1">{errors.rut}</p>
             )}
           </div>
 
@@ -94,8 +100,8 @@ export default function LoginScreen() {
           <div>
             <div
               className={`flex items-center gap-2 rounded-md border px-3 py-2 
-                bg-purple-50/40 dark:bg-gray-800
-                ${errors.pwd ? "border-rose-400" : "border-purple-200 dark:border-gray-700"}
+              bg-purple-50/40 dark:bg-gray-800
+              ${errors.pwd ? "border-rose-400" : "border-purple-200 dark:border-gray-700"}
               `}
             >
               <span className="text-gray-700 dark:text-gray-300">🔒</span>
@@ -125,7 +131,6 @@ export default function LoginScreen() {
             <button
               type="button"
               className="text-sm text-purple-600 hover:underline dark:text-purple-400"
-              onClick={() => alert("Navegar a recuperación de contraseña")}
             >
               ¿Olvidaste tu contraseña?
             </button>
@@ -146,17 +151,6 @@ export default function LoginScreen() {
             </button>
           )}
 
-          {/* Register */}
-          <div className="text-center text-sm text-gray-600 dark:text-gray-300">
-            ¿No tienes una cuenta?{" "}
-            <button
-              type="button"
-              className="text-purple-700 hover:underline dark:text-purple-400"
-              onClick={() => alert("Navegar a registro")}
-            >
-              Regístrate
-            </button>
-          </div>
         </form>
       </div>
 
