@@ -8,6 +8,7 @@ export default function FormularioCaeScreen() {
   // Logos recibidos desde navigate(..., { state: { logoHeader, logoFooter } })
   const base64LogoHeader = location?.state?.logoHeader || "";
   const base64LogoFooter = location?.state?.logoFooter || "";
+  const API_URL = process.env.REACT_APP_API_DOS_BASE_URL;
 
   // Form state
   const [fecha, setFecha] = useState("");
@@ -17,7 +18,7 @@ export default function FormularioCaeScreen() {
   const [carrera, setCarrera] = useState("");
   const [correo, setCorreo] = useState("");
   const [fundamentacion, setFundamentacion] = useState("");
-  const [opciones, setOpciones] = useState([]);
+  const [opcionSeleccionada, setOpcionSeleccionada] = useState("otros");
   const [firmaPreview, setFirmaPreview] = useState(null);
   const [adjSi, setAdjSi] = useState(null); // true/false
   const [adjuntos, setAdjuntos] = useState([]);
@@ -37,11 +38,8 @@ export default function FormularioCaeScreen() {
     ],
     []
   );
-
-  const toggleOpcion = (val) => {
-    setOpciones((prev) =>
-      prev.includes(val) ? prev.filter((x) => x !== val) : [...prev, val]
-    );
+  const handleSelectOpcion = (val) => {
+    setOpcionSeleccionada(val);
   };
 
   const onFirmaChange = (e) => {
@@ -60,14 +58,16 @@ export default function FormularioCaeScreen() {
     setAdjuntos(files);
   };
 
-  const onSubmit = (e) => {
+
+  const onSubmit = async (e) => {
     e.preventDefault();
-    // Validaciones simples
+
     if (!fecha || !nombre || !ci || !fono || !carrera || !correo || !fundamentacion) {
       alert("Completa todos los campos requeridos.");
       return;
     }
 
+    // Construcción del formData que irá al PDF
     const formData = {
       fecha,
       nombre,
@@ -75,24 +75,66 @@ export default function FormularioCaeScreen() {
       fono,
       carrera,
       correo,
-      opciones,
+      opcionSeleccionada,
       fundamentacion,
-      firma: firmaPreview, // dataURL de la firma (si subieron)
-      adjuntos: adjuntos.map((f) => ({ name: f.name, type: f.type, size: f.size })),
+      firma: firmaPreview,
+      adjuntos: adjuntos.map((f) => ({
+        name: f.name,
+        type: f.type,
+        size: f.size
+      })),
+
     };
 
-    // Simulación de envío
-    alert("Solicitud enviada ✔️ (simulado)");
+    try {
+      // Esto se guarda en la tabla Solicitud
+      const reqBody = {
+        sol_Nombre: nombre,
+        sol_CI: ci,
+        sol_Fono: fono,
+        sol_carrera: carrera,
+        sol_correo: correo,
+        sol_Fundamento: fundamentacion,
+        AdjuntaAntecedentes: adjSi ? 1 : 0,
+        tipodocumento_id: 1,
+        user_rut: JSON.parse(localStorage.getItem("user"))?.user_rut || "",
+        sol_autorizacion: opcionSeleccionada,
+      };
 
-    // Navegar a confirmar, con datos y logos
-    navigate("/confirmar_formulario", {
-      state: {
-        formData,
-        base64LogoHeader,
-        base64LogoFooter,
-      },
-    });
+      const res = await fetch(`${API_URL}/solicitudes/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reqBody),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error(data);
+        alert("Error al generar solicitud");
+        return;
+      }
+
+      // Aquí obtenemos el "Ingreso N°"
+      const ingreso = data.sol_NIngreso;
+      console.log("Ingreso generado:", ingreso);
+      
+      // Ahora navegamos con ingreso + formData
+      navigate("/confirmar_formulario", {
+        state: {
+          ingreso,
+          formData,
+          base64LogoHeader,
+          base64LogoFooter,
+        },
+      });
+
+    } catch (error) {
+      console.error(error);
+      alert("Error de conexión con el servidor");
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-white text-[#2f2f2f]">
@@ -202,16 +244,17 @@ export default function FormularioCaeScreen() {
 
           {/* Tabla de opciones (2 col) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-            {opcionesLista.map((o, idx) => (
+            {opcionesLista.map((o) => (
               <label
                 key={o.v}
                 className="border border-black px-2 py-1 text-[0.86rem] flex items-center"
               >
                 <input
-                  type="checkbox"
+                  type="radio"
+                  name="sol_autorizacion"
                   className="mr-2 w-4 h-4"
-                  checked={opciones.includes(o.v)}
-                  onChange={() => toggleOpcion(o.v)}
+                  checked={opcionSeleccionada === o.v}
+                  onChange={() => handleSelectOpcion(o.v)}
                 />
                 {o.label}
               </label>
@@ -291,12 +334,12 @@ export default function FormularioCaeScreen() {
             )}
           </div>
 
-          {/* Enviar */}
+          {/* Enviar al confirmar*/}
           <button
             type="submit"
             className="mt-8 mb-12 px-6 py-3 rounded bg-[#009b9b] text-white font-bold uppercase"
           >
-            Enviar
+            Generar
           </button>
         </form>
 

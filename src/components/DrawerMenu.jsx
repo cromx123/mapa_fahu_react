@@ -9,6 +9,8 @@ export default function DrawerMenu({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  const user = JSON.parse(localStorage.getItem("user"));
+
   return (
     <div className="fixed inset-0 z-[5000] flex">
       <button className="flex-1 bg-black/40" onClick={onClose} aria-label="Cerrar menú" />
@@ -20,7 +22,17 @@ export default function DrawerMenu({ isOpen, onClose }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          <MenuItem label={t("ms_login")} onClick={() => { navigate("/login"); onClose(); }} />
+          {!user ? (
+            <MenuItem 
+              label={t("ms_login")} 
+              onClick={() => { navigate("/login"); onClose(); }} 
+            />
+          ) : (
+            <MenuItem 
+              label="Ver solicitudes"
+              onClick={() => { navigate("/solicitudes_screen"); onClose(); }} 
+            />
+          )}
           <hr className="my-2" />
           <MenuItem label={t("ms_portalUsach")} onClick={() => window.open("https://www.usach.cl/", "_blank")} />
           <MenuItem label={t("ms_portalFahu")} onClick={() => window.open("https://fahu.usach.cl/", "_blank")} />
