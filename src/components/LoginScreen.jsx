@@ -6,24 +6,22 @@ import useAuth from "../hooks/userAuth";
 export default function LoginScreen() {
   const navigate = useNavigate();
   const { login, loading } = useAuth();
-
-  const [rut, setRut] = useState("");
+  const [emailUser, setEmailUser] = useState("");
   const [pwd, setPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
-
-  const [errors, setErrors] = useState({ rut: "", pwd: "" });
+  const [errors, setErrors] = useState({ emailUser: "", pwd: "" });
   const [snack, setSnack] = useState("");
 
   const validate = () => {
     let ok = true;
-    const next = { rut: "", pwd: "" };
+    const next = { emailUser: "", pwd: "" };
 
-    // Validar RUT
-    if (!rut.trim()) {
-      next.rut = "Por favor ingresa tu RUT";
+    // Validar "usuario" del correo (sin dominio)
+    if (!emailUser.trim()) {
+      next.emailUser = "Por favor ingresa tu usuario USACH";
       ok = false;
-    } else if (!/^[0-9]+[-|‐]?[0-9kK]$/.test(rut.trim())) {
-      next.rut = "RUT no válido";
+    } else if (!/^[^\s@]+$/.test(emailUser.trim())) {
+      next.emailUser = "Usuario no válido (no uses espacios ni @)";
       ok = false;
     }
 
@@ -41,7 +39,9 @@ export default function LoginScreen() {
     e.preventDefault();
     if (!validate()) return;
 
-    const result = await login(rut, pwd);
+    const fullEmail = `${emailUser.trim().toLowerCase()}@usach.cl`;
+
+    const result = await login(fullEmail, pwd);
 
     if (result?.redirectVerify) {
       navigate("/verificar-cuenta");
@@ -49,11 +49,17 @@ export default function LoginScreen() {
     }
 
     if (result?.error) {
-      setSnack(result.error);
+      const msg =
+        typeof result.error === "string"
+          ? result.error
+          : result.error?.msg
+            ? result.error.msg
+            : JSON.stringify(result.error);
+
+      setSnack(msg);
       return;
     }
 
-    // Si login OK → redirige
     navigate("/solicitudes_screen", { replace: true });
   };
 
@@ -74,25 +80,28 @@ export default function LoginScreen() {
         {/* Form */}
         <form className="mt-10 space-y-4" onSubmit={onSubmit} noValidate>
 
-          {/* RUT */}
+          {/* Usuario USACH (sin @usach.cl) */}
           <div>
             <div
               className={`flex items-center gap-2 rounded-md border px-3 py-2 
               bg-purple-50/40 dark:bg-gray-800
-              ${errors.rut ? "border-rose-400" : "border-purple-200 dark:border-gray-700"}
+              ${errors.emailUser ? "border-rose-400" : "border-purple-200 dark:border-gray-700"}
               `}
             >
-              <span className="text-gray-700 dark:text-gray-300">🪪</span>
+              <span className="text-gray-700 dark:text-gray-300">📧</span>
               <input
                 type="text"
-                placeholder="RUT (ej: 11111111-1)"
+                placeholder="usuario (sin @usach.cl)"
                 className="w-full bg-transparent outline-none text-gray-900 dark:text-gray-100"
-                value={rut}
-                onChange={(e) => setRut(e.target.value)}
+                value={emailUser}
+                onChange={(e) => setEmailUser(e.target.value)}
               />
+              <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                @usach.cl
+              </span>
             </div>
-            {errors.rut && (
-              <p className="text-sm text-rose-600 mt-1">{errors.rut}</p>
+            {errors.emailUser && (
+              <p className="text-sm text-rose-600 mt-1">{errors.emailUser}</p>
             )}
           </div>
 
@@ -157,7 +166,7 @@ export default function LoginScreen() {
       {/* Snack */}
       {snack && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-4 py-2 rounded-lg shadow dark:bg-gray-800">
-          {snack}
+          {typeof snack === "string" ? snack : JSON.stringify(snack)}
         </div>
       )}
     </div>

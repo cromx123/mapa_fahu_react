@@ -15,6 +15,7 @@ import FavoritosScreen from "./components/FavoritosScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
 import VerificarCuenta from "./components/VerificarCuenta";
 import AyudaSolicitudesScreen from "./components/AyudaSolicitudesScreen";
+import FirmasPreviewScreen from "./components/FirmasPreviewScreen";
 
 function App() {
   return (
@@ -27,7 +28,7 @@ function App() {
         <Route path="/config" element={<ConfigScreen />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/verificar-cuenta" element={<VerificarCuenta />} />
-
+        <Route path="/firmas" element={<FirmasPreviewScreen/>} />
         <Route path="/servicios" element={<ServiciosScreen />} />
         <Route path="/convocatorias" element={<ConvocatoriasScreen />} />
         <Route path="/favoritos" element={<FavoritosScreen/>}/>
