@@ -70,6 +70,7 @@ export default function ConfirmarFormularioScreen() {
       const res = await fetch(`${API_URL}/solicitudes/confirmar/formulario`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ingreso: ingreso, user_rut: user.user_rut}),
       });
 
