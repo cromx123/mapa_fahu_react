@@ -25,7 +25,11 @@ export default function AsideMenu({ onToggle }) {
       {/* HEADER */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="font-bold text-lg text-gray-800 dark:text-gray-100">
-          FaHu
+          <img
+            src="https://fahu.usach.cl/site-assets/uploads/2023/06/Logo-FAHU-header.svg"
+            alt="Facultad de Humanidades"
+            className="w-40 h-auto" 
+          />
         </div>
         <Menu className="md:hidden text-gray-600 dark:text-gray-300" onClick={onToggle} />
       </div>

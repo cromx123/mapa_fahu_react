@@ -2,7 +2,7 @@ import React from "react";
 import ServiceCard from "./ServiceCard";
 import { MdSchool } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
-
+import { ChevronLeft } from "lucide-react";
 
 
 export default function ConvocatoriasScreen() {
@@ -20,13 +20,13 @@ export default function ConvocatoriasScreen() {
   const navigate = useNavigate();
   
   return (
-    <div className="h-screen w-full flex flex-col">
-      <header className="px-4 py-3 bg-teal-600 text-white text-lg font-bold shadow">
+    <div className="h-screen w-full flex flex-col bg-white dark:bg-gray-900">
+      <header className="px-4 py-3 bg-teal-600 dark:bg-teal-700 text-white text-lg font-bold shadow flex items-center">
         <button
           onClick={() => navigate(-1)}
           className="mr-3 text-xl hover:text-gray-200"
         >
-          ← 
+          <ChevronLeft />
         </button>  {/*Cambiar el icono por <*/}
         Convocatorias Ayudantías
       </header>
