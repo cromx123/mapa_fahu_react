@@ -28,7 +28,7 @@ export default function AsideMenu({ onToggle }) {
           <img
             src="https://fahu.usach.cl/site-assets/uploads/2023/06/Logo-FAHU-header.svg"
             alt="Facultad de Humanidades"
-            className="w-40 h-auto" 
+            className="w-60 h-auto p-2 dark:bg-white rounded-md" 
           />
         </div>
         <Menu className="md:hidden text-gray-600 dark:text-gray-300" onClick={onToggle} />
