@@ -231,30 +231,6 @@ export default function ConfigSolicitudesScreen() {
                     onChange={setNotifications}
                     />
 
-                    <ConfigSwitchCard
-                    icon="📅"
-                    color="#ef4444"
-                    title={t("cs_events")}
-                    subtitle={t("cs_eventsSubtitle")}
-                    value={events}
-                    onChange={setEvents}
-                    />
-
-                    <ConfigCard
-                    icon="💾"
-                    color="#06b6d4"
-                    title={t("cs_savedRoutes")}
-                    onClick={() => navigate("/favoritos")}
-                    />
-
-                    <ConfigCard
-                    icon="📏"
-                    color="#84cc16"
-                    title={t("cs_units")}
-                    subtitle={unit === "meters" ? t("cs_unitsMeters") : t("cs_unitsMiles")}
-                    onClick={() => setUnit(unit === "meters" ? "miles" : "meters")}
-                    />
-
                     <ConfigCard
                     icon="❓"
                     color="#22c55e"

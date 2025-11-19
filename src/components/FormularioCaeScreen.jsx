@@ -1,5 +1,5 @@
 // src/components/FormularioCaeScreen.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function FormularioCaeScreen() {
@@ -22,6 +22,16 @@ export default function FormularioCaeScreen() {
   const [firmaPreview, setFirmaPreview] = useState(null);
   const [adjSi, setAdjSi] = useState(null); // true/false
   const [adjuntos, setAdjuntos] = useState([]);
+
+  useEffect(() => {
+    const preload = JSON.parse(localStorage.getItem("user")) || {};
+    setNombre(preload.user_name || "");
+    setCorreo(preload.user_correo || "");
+    setCi(preload.user_rut || "");
+    setFono(preload.user_phone || "");
+    setCarrera(preload.user_carrera || "");
+  }, []);
+
 
   const opcionesLista = useMemo(
     () => [
@@ -97,13 +107,14 @@ export default function FormularioCaeScreen() {
         sol_Fundamento: fundamentacion,
         AdjuntaAntecedentes: adjSi ? 1 : 0,
         tipodocumento_id: 1,
-        user_rut: JSON.parse(localStorage.getItem("user"))?.user_rut || "",
+        user_rut: JSON.parse(localStorage.getItem("user")).user_rut,
         sol_autorizacion: opcionSeleccionada,
       };
 
       const res = await fetch(`${API_URL}/solicitudes/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(reqBody),
       });
 
@@ -118,7 +129,7 @@ export default function FormularioCaeScreen() {
       // Aquí obtenemos el "Ingreso N°"
       const ingreso = data.sol_NIngreso;
       console.log("Ingreso generado:", ingreso);
-      
+
       // Ahora navegamos con ingreso + formData
       navigate("/confirmar_formulario", {
         state: {

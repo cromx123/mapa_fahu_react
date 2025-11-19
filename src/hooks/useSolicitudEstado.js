@@ -25,7 +25,7 @@ export default function useSolicitudEstado(sol_id) {
 
     const fetchSolicitud = async () => {
       try {
-        const res = await fetch(`${API_URL}/solicitudes/${sol_id}/estados`);
+        const res = await fetch(`${API_URL}/solicitudes/${sol_id}/estados`, {credentials: "include"});
 
         if (!res.ok) {
           throw new Error("No se pudieron obtener los estados de la solicitud");
