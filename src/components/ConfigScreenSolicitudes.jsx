@@ -109,8 +109,8 @@ function ConfigCard({ icon, color = "#2563eb", title, subtitle, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="w-full rounded-xl shadow-sm border cursor-pointer transition
-                 bg-white dark:bg-[#1E1E1E] hover:bg-gray-50 dark:hover:bg-gray-800"
+      className="w-full rounded-xl shadow-sm cursor-pointer transition
+                 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
     >
       <div className="flex items-center p-4">
         <div
@@ -138,8 +138,8 @@ function ConfigSwitchCard({
   onChange,
 }) {
   return (
-    <div className="w-full rounded-xl shadow-sm border flex items-center
-                    bg-white dark:bg-[#1E1E1E] p-4">
+    <div className="w-full rounded-xl shadow-sm flex items-center transition
+                    bg-white dark:bg-gray-800 p-4 hover:bg-gray-100 dark:hover:bg-gray-700">
       <div
         className="flex items-center justify-center w-12 h-12 rounded-full"
         style={{ backgroundColor: `${color}20`, color }}
@@ -170,9 +170,16 @@ export default function ConfigSolicitudesScreen() {
 
   const [showThemeSheet, setShowThemeSheet] = useState(false);
   const [showLanguageSheet, setShowLanguageSheet] = useState(false);
+  const data = JSON.parse(localStorage.getItem("user"));
+
+  const TIPOS_USUARIO = Object.freeze({
+    1: "Estudiante",
+    2: "Analista",
+    3: "Administrador",
+  });
 
     return (
-        <div className="min-h-screen w-full flex bg-gray-50 dark:bg-[#121212]">
+        <div className="min-h-screen w-full flex bg-gray-50 dark:bg-gray-900">
 
             {/* ASIDE MENU */}
             <AsideMenu />
@@ -180,99 +187,105 @@ export default function ConfigSolicitudesScreen() {
             {/* CONTENIDO PRINCIPAL */}
             <div className="flex-1 flex flex-col">
 
-            {/* TOP BAR */}
-            <header className="flex items-center px-4 py-3 bg-[#00A499] text-white shadow">
-                <h1 className="text-lg font-bold">{t("cs_settingsTitle")}</h1>
-            </header>
+                <header className="px-4 py-3 bg-teal-600 text-white text-lg font-bold shadow">
+                    <div className="flex justify-between items-center">
+                        <span>{t("cs_settingsTitle")}</span>
+                        <div className="flex flex-col text-right leading-tight">
+                            <span className="font-semibold text-white">{data.user_name}</span>
+                            <span className="text-sm text-gray-200">{TIPOS_USUARIO[data.tipousuario_id]}</span>
+                        </div>
 
-            {/* CONTENIDO SCROLLEABLE */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    </div>
+                </header>
 
-                <ConfigCard
-                icon="🌐"
-                color="#0ea5e9"
-                title={t("cs_language")}
-                subtitle={locale === "es" ? t("cs_languageSpanish") : t("cs_languageEnglish")}
-                onClick={() => setShowLanguageSheet(true)}
+                {/* CONTENIDO SCROLLEABLE */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+
+                    <ConfigCard
+                    icon="🌐"
+                    color="#0ea5e9"
+                    title={t("cs_language")}
+                    subtitle={locale === "es" ? t("cs_languageSpanish") : t("cs_languageEnglish")}
+                    onClick={() => setShowLanguageSheet(true)}
+                    />
+
+                    <ConfigCard
+                    icon="🎨"
+                    color="#8b5cf6"
+                    title={t("cs_theme")}
+                    subtitle={
+                        theme === "light"
+                        ? t("cs_themeLight")
+                        : theme === "dark"
+                        ? t("cs_themeDark")
+                        : t("cs_themeSystem")
+                    }
+                    onClick={() => setShowThemeSheet(true)}
+                    />
+
+                    <ConfigSwitchCard
+                    icon="🔔"
+                    color="#f59e0b"
+                    title={t("cs_notifications")}
+                    value={notifications}
+                    onChange={setNotifications}
+                    />
+
+                    <ConfigSwitchCard
+                    icon="📅"
+                    color="#ef4444"
+                    title={t("cs_events")}
+                    subtitle={t("cs_eventsSubtitle")}
+                    value={events}
+                    onChange={setEvents}
+                    />
+
+                    <ConfigCard
+                    icon="💾"
+                    color="#06b6d4"
+                    title={t("cs_savedRoutes")}
+                    onClick={() => navigate("/favoritos")}
+                    />
+
+                    <ConfigCard
+                    icon="📏"
+                    color="#84cc16"
+                    title={t("cs_units")}
+                    subtitle={unit === "meters" ? t("cs_unitsMeters") : t("cs_unitsMiles")}
+                    onClick={() => setUnit(unit === "meters" ? "miles" : "meters")}
+                    />
+
+                    <ConfigCard
+                    icon="❓"
+                    color="#22c55e"
+                    title={t("cs_helpAndSupport")}
+                    onClick={() => alert("Ir a ayuda y soporte")}
+                    />
+
+                    <ConfigCard
+                    icon="💬"
+                    color="#ec4899"
+                    title={t("cs_feedback")}
+                    onClick={() => navigate("/sugerencias")}
+                    />
+                </div>
+
+                {/* BOTTOM SHEETS */}
+                <ThemePickerSheet
+                    open={showThemeSheet}
+                    onClose={() => setShowThemeSheet(false)}
+                    value={theme}
+                    onChange={setTheme}
+                    t={t}
                 />
 
-                <ConfigCard
-                icon="🎨"
-                color="#8b5cf6"
-                title={t("cs_theme")}
-                subtitle={
-                    theme === "light"
-                    ? t("cs_themeLight")
-                    : theme === "dark"
-                    ? t("cs_themeDark")
-                    : t("cs_themeSystem")
-                }
-                onClick={() => setShowThemeSheet(true)}
+                <LanguagePickerSheet
+                    open={showLanguageSheet}
+                    onClose={() => setShowLanguageSheet(false)}
+                    value={locale}
+                    onChange={setLocale}
+                    t={t}
                 />
-
-                <ConfigSwitchCard
-                icon="🔔"
-                color="#f59e0b"
-                title={t("cs_notifications")}
-                value={notifications}
-                onChange={setNotifications}
-                />
-
-                <ConfigSwitchCard
-                icon="📅"
-                color="#ef4444"
-                title={t("cs_events")}
-                subtitle={t("cs_eventsSubtitle")}
-                value={events}
-                onChange={setEvents}
-                />
-
-                <ConfigCard
-                icon="💾"
-                color="#06b6d4"
-                title={t("cs_savedRoutes")}
-                onClick={() => navigate("/favoritos")}
-                />
-
-                <ConfigCard
-                icon="📏"
-                color="#84cc16"
-                title={t("cs_units")}
-                subtitle={unit === "meters" ? t("cs_unitsMeters") : t("cs_unitsMiles")}
-                onClick={() => setUnit(unit === "meters" ? "miles" : "meters")}
-                />
-
-                <ConfigCard
-                icon="❓"
-                color="#22c55e"
-                title={t("cs_helpAndSupport")}
-                onClick={() => alert("Ir a ayuda y soporte")}
-                />
-
-                <ConfigCard
-                icon="💬"
-                color="#ec4899"
-                title={t("cs_feedback")}
-                onClick={() => navigate("/sugerencias")}
-                />
-            </div>
-
-            {/* BOTTOM SHEETS */}
-            <ThemePickerSheet
-                open={showThemeSheet}
-                onClose={() => setShowThemeSheet(false)}
-                value={theme}
-                onChange={setTheme}
-                t={t}
-            />
-
-            <LanguagePickerSheet
-                open={showLanguageSheet}
-                onClose={() => setShowLanguageSheet(false)}
-                value={locale}
-                onChange={setLocale}
-                t={t}
-            />
             </div>
         </div>
     );

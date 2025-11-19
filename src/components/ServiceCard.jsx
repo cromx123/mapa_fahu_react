@@ -32,8 +32,7 @@ export default function ServiceCard({
   return (
     <div
       onClick={onClick}
-      className={`w-full rounded-xl shadow-sm border cursor-pointer transition mb-4 
-        ${isDark ? "bg-gray-800 border-gray-700 hover:bg-gray-700" : "bg-white border-gray-100 hover:shadow-md"}`}
+      className={`w-full rounded-xl shadow-sm border cursor-pointer transition mb-4 dark:hover:bg-gray-700 dark:bg-gray-800 dark:border-0 bg-white hover:bg-gray-100`}
     >
       <div className="flex items-center p-4">
         {/* Icono en círculo */}
@@ -43,11 +42,11 @@ export default function ServiceCard({
 
         {/* Texto */}
         <div className="flex-1 ml-4">
-          <div className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+          <div className={`font-semibold text-gray-900 dark:text-white`}>
             {title}
           </div>
           {description && (
-            <div className={`text-sm mt-1 ${isDark ? "text-gray-300" : "text-gray-500"}`}>
+            <div className={`text-sm mt-1 text-gray-500 dark:text-gray-300`}>
               {description}
             </div>
           )}
@@ -55,7 +54,7 @@ export default function ServiceCard({
 
         {/* Chevron */}
         {(route || onClick) && (
-          <MdChevronRight className={`text-2xl ${isDark ? "text-gray-400" : "text-gray-400"}`} />
+          <MdChevronRight className={`text-2xl text-gray-400 dark:text-gray-400`} />
         )}
       </div>
     </div>

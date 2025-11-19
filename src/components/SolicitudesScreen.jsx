@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { base64LogoHeader, base64LogoFooter } from "./FotoScreen";
 import useSolicitudes from "../hooks/useSolicitudes";
 import AsideMenu from "./AsideMenu";
+import { Search } from "lucide-react";
 
 const USACH_ORANGE = "#E77500";
 
@@ -12,6 +13,11 @@ export default function SolicitudesScreen() {
   const { solicitudes, loading, error } = useSolicitudes();
   const [periodo, setPeriodo] = useState("Primer semestre del año 2025");
   const data = JSON.parse(localStorage.getItem("user"));
+  const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState("");
+  const [filtroFecha, setFiltroFecha] = useState("");
+  const [filtroDocumento, setFiltroDocumento] = useState("");
 
   const getEstadoStyles = (estado) => {
     if (!estado) return {};
@@ -68,19 +74,75 @@ export default function SolicitudesScreen() {
     "reincorporacion": "Reincorporación fuera de plazo",
     "Otros": "Otros"
   };
+  let solicitudesFiltradas = [...solicitudes];
+
+  // FILTRAR ESTADO
+  if (filtroEstado) {
+    solicitudesFiltradas = solicitudesFiltradas.filter(
+      (s) => s.estado === filtroEstado
+    );
+  }
+
+  // FILTRAR TIPO
+  if (filtroTipo) {
+    solicitudesFiltradas = solicitudesFiltradas.filter(
+      (s) => s.tipo === filtroTipo
+    );
+  }
+
+  // FILTRAR POR FECHA
+  if (filtroFecha) {
+    const ahora = new Date();
+
+    solicitudesFiltradas = solicitudesFiltradas.filter((s) => {
+      const fecha = new Date(s.fechaCreacion);
+
+      if (filtroFecha === "hoy") {
+        return fecha.toDateString() === ahora.toDateString();
+      }
+
+      if (filtroFecha === "semana") {
+        const hace7 = new Date();
+        hace7.setDate(ahora.getDate() - 7);
+        return fecha >= hace7;
+      }
+
+      if (filtroFecha === "mes") {
+        const hace30 = new Date();
+        hace30.setDate(ahora.getDate() - 30);
+        return fecha >= hace30;
+      }
+
+      return true;
+    });
+  }
+
+  // FILTRAR POR DOCUMENTO
+  if (filtroDocumento === "con") {
+    solicitudesFiltradas = solicitudesFiltradas.filter((s) => s.documento);
+  }
+
+  if (filtroDocumento === "sin") {
+    solicitudesFiltradas = solicitudesFiltradas.filter((s) => !s.documento);
+  }
+
   const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const totalPages = Math.ceil(solicitudes.length / ITEMS_PER_PAGE);
 
-  const solicitudesPagina = solicitudes.slice(startIndex, endIndex);
+  const solicitudesPagina = solicitudesFiltradas.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(solicitudesFiltradas.length / ITEMS_PER_PAGE);
+
 
   const TIPOS_USUARIO = Object.freeze({
     1: "Estudiante",
     2: "Analista",
     3: "Administrador",
   });
+
+  
+
 
   return (
     <div className="min-h-screen w-full flex bg-gray-50 dark:bg-gray-900">
@@ -114,14 +176,17 @@ export default function SolicitudesScreen() {
             </select>
 
             <button
-              className="rounded-md bg-gray-100 dark:bg-gray-700 border px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600"
-              onClick={() => alert("Filtrar (placeholder)")}
+              className="rounded-md bg-gray-100 dark:bg-gray-700 border px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-2"
+              onClick={() => setMostrarFiltros(true)}
+              title="Ver Filtros"
             >
-              Filtrar
+              <Search size={16} className="text-gray-700 dark:text-gray-200" />
+              <span>Filtrar</span>
             </button>
 
             <button
               className="rounded-md text-white px-4 py-2"
+              title="Ingresar Solicitud"
               style={{ backgroundColor: USACH_ORANGE }}
               onClick={() =>
                 navigate("/formulario_cae", { state: { ...logosState } })
@@ -160,9 +225,102 @@ export default function SolicitudesScreen() {
                       </tr>
                     </thead>
                     <tbody>
+                    {mostrarFiltros && (
+                      <div className="fixed inset-0 z-[2000] flex justify-end">
+                        {/* BACKDROP */}
+                        <div
+                          className="absolute inset-0 bg-black/50"
+                          onClick={() => setMostrarFiltros(false)}
+                        />
+
+                          {/* PANEL */}
+                          <div className="relative w-80 bg-white dark:bg-gray-800 shadow-xl h-full p-5 animate-[slideLeft_.2s_ease-out]">
+                            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">
+                              Filtros
+                            </h2>
+
+                            {/* ESTADO */}
+                            <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300">Estado</label>
+                            <select
+                              value={filtroEstado}
+                              onChange={(e) => setFiltroEstado(e.target.value)}
+                              className="w-full mt-1 mb-4 rounded-md bg-gray-100 dark:bg-gray-700 p-2"
+                            >
+                              <option value="">Todos</option>
+                              <option value="Pendiente">Pendiente</option>
+                              <option value="En análisis">En análisis</option>
+                              <option value="Aceptado">Aceptado</option>
+                              <option value="Rechazado">Rechazado</option>
+                            </select>
+                            {/* TIPO */}
+                            <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300">Tipo de Solicitud</label>
+                            <select
+                              value={filtroTipo}
+                              onChange={(e) => setFiltroTipo(e.target.value)}
+                              className="w-full mt-1 mb-4 rounded-md bg-gray-100 dark:bg-gray-700 p-2"
+                            >
+                              <option value="">Todos</option>
+                              {Object.keys(tipoOptions).map((key) => (
+                                <option key={key} value={key}>{tipoOptions[key]}</option>
+                              ))}
+                            </select>
+
+                            {/* FECHA */}
+                            <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300">Fecha</label>
+                            <select
+                              value={filtroFecha}
+                              onChange={(e) => setFiltroFecha(e.target.value)}
+                              className="w-full mt-1 mb-4 rounded-md bg-gray-100 dark:bg-gray-700 p-2"
+                            >
+                              <option value="">Todas</option>
+                              <option value="hoy">Hoy</option>
+                              <option value="semana">Última semana</option>
+                              <option value="mes">Último mes</option>
+                            </select>
+
+                            {/* DOCUMENTO */}
+                            <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300">Documento</label>
+                            <select
+                              value={filtroDocumento}
+                              onChange={(e) => setFiltroDocumento(e.target.value)}
+                              className="w-full mt-1 mb-6 rounded-md bg-gray-100 dark:bg-gray-700 p-2"
+                            >
+                              <option value="">Todos</option>
+                              <option value="con">Solo con documento</option>
+                              <option value="sin">Solo sin documento</option>
+                            </select>
+                            {/* BOTONES */}
+                            <div className="flex justify-between mt-4">
+                              <button
+                                onClick={() => {
+                                  setFiltroEstado("");
+                                  setFiltroTipo("");
+                                  setFiltroFecha("");
+                                  setFiltroDocumento("");
+                                }}
+                                className="px-3 py-2 rounded bg-gray-200 dark:bg-gray-600"
+                              >
+                                Limpiar
+                              </button>
+                              <button
+                                onClick={() => setMostrarFiltros(false)}
+                                className="px-4 py-2 rounded bg-teal-600 text-white"
+                              >
+                                Aplicar
+                              </button>
+                            </div>
+                          </div>
+                          <style>{`
+                            @keyframes slideLeft {
+                              from { transform: translateX(100%); }
+                              to   { transform: translateX(0); }
+                            }
+                          `}</style>
+                        </div>
+                      )}
                       {solicitudesPagina.map((s, i) => {
                         const est = getEstadoStyles(s.estado);
-                        console.log("ESTADO SOLICITUD:", s);
+
                         return (
                           <tr
                             key={i}

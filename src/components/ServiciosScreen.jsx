@@ -3,6 +3,7 @@ import React from "react";
 import ServiceCard from "./ServiceCard";
 import { useNavigate } from "react-router-dom";
 import { useAppSettings } from "../context/SettingsContext";
+import { ChevronLeft } from "lucide-react";
 
 export default function ServicesScreen() {
   const navigate = useNavigate();
@@ -49,12 +50,12 @@ export default function ServicesScreen() {
   return (
     <div className="h-screen w-full flex flex-col bg-white dark:bg-gray-900">
       {/* Header */}
-      <header className="px-4 py-3 bg-teal-600 text-white text-lg font-bold shadow dark:bg-teal-700">
+      <header className="px-4 py-3 bg-teal-600 text-white text-lg font-bold shadow dark:bg-teal-700 flex items-center">
         <button
           onClick={() => navigate(-1)}
           className="mr-3 text-xl hover:text-gray-200"
         >
-          ←
+        <ChevronLeft />
         </button>
         {t("srv_header")}
       </header>

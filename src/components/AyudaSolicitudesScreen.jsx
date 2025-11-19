@@ -5,6 +5,13 @@ import AsideMenu from "./AsideMenu";
 
 export default function AyudaSolicitudesScreen() {
   const navigate = useNavigate();
+  const data = JSON.parse(localStorage.getItem("user"));
+  
+  const TIPOS_USUARIO = Object.freeze({
+    1: "Estudiante",
+    2: "Analista",
+    3: "Administrador",
+  });
 
   return (
     <div className="min-h-screen w-full flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -19,6 +26,10 @@ export default function AyudaSolicitudesScreen() {
         <header className="px-4 py-3 bg-teal-600 text-white text-lg font-bold shadow">
           <div className="flex justify-between items-center">
             <span>Ayuda</span>
+            <div className="flex flex-col text-right leading-tight">
+              <span className="font-semibold text-white">{data.user_name}</span>
+              <span className="text-sm text-gray-200">{TIPOS_USUARIO[data.tipousuario_id]}</span>
+            </div>
           </div>
         </header>
 

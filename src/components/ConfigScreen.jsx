@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppSettings } from "../context/SettingsContext";
+import { ChevronLeft } from "lucide-react";
 
 /* ============== BottomSheet genérico ============== */
 function BottomSheet({ open, onClose, title, children }) {
@@ -108,8 +109,8 @@ function ConfigCard({ icon, color = "#2563eb", title, subtitle, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="w-full rounded-xl shadow-sm border cursor-pointer transition
-                 bg-white dark:bg-[#1E1E1E] hover:bg-gray-50 dark:hover:bg-gray-800"
+      className="w-full rounded-xl shadow-sm cursor-pointer transition
+                 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
     >
       <div className="flex items-center p-4">
         <div
@@ -137,8 +138,8 @@ function ConfigSwitchCard({
   onChange,
 }) {
   return (
-    <div className="w-full rounded-xl shadow-sm border flex items-center
-                    bg-white dark:bg-[#1E1E1E] p-4">
+    <div className="w-full rounded-xl shadow-sm flex items-center transition
+                    bg-white dark:bg-gray-800 p-4 hover:bg-gray-100 dark:hover:bg-gray-700">
       <div
         className="flex items-center justify-center w-12 h-12 rounded-full"
         style={{ backgroundColor: `${color}20`, color }}
@@ -171,13 +172,13 @@ export default function ConfigScreen() {
   const [showLanguageSheet, setShowLanguageSheet] = useState(false);
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gray-50 dark:bg-[#121212]">
-      <header className="flex items-center px-4 py-3 bg-[#00A499] text-white shadow">
+    <div className="min-h-screen w-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      <header className="flex items-center px-4 py-3 bg-teal-600 text-white shadow">
         <button
           onClick={() => navigate(-1)}
           className="mr-3 text-xl hover:text-gray-200"
         >
-          ←
+        <ChevronLeft />
         </button>
         <h1 className="text-lg font-bold">{t("cs_settingsTitle")}</h1>
       </header>
