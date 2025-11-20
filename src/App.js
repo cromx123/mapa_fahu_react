@@ -17,6 +17,7 @@ import VerificarCuenta from "./components/VerificarCuenta";
 import AyudaSolicitudesScreen from "./components/AyudaSolicitudesScreen";
 import FirmasPreviewScreen from "./components/FirmasPreviewScreen";
 import PerfilUsuario from "./components/PerfilUsuario";
+import VerificarCorreo from "./components/VerificarCorreo"
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route path="/config" element={<ConfigScreen />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/verificar-cuenta" element={<VerificarCuenta />} />
+        <Route path="/verificar-correo" element={<VerificarCorreo />} />
         <Route path="/firmas" element={<FirmasPreviewScreen/>} />
         <Route path="/servicios" element={<ServiciosScreen />} />
         <Route path="/convocatorias" element={<ConvocatoriasScreen />} />
