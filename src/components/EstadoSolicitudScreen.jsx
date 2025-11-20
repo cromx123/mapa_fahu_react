@@ -2,6 +2,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import useSolicitudEstado from "../hooks/useSolicitudEstado";
+import { ChevronLeft } from "lucide-react";
 
 export default function EstadosSolicitudesScreen() {
   const navigate = useNavigate();
@@ -60,9 +61,9 @@ export default function EstadosSolicitudesScreen() {
           onClick={() => navigate(-1)}
           className="mr-3 text-xl hover:text-gray-200"
         >
-          ←
+        <ChevronLeft />
         </button>
-        <h1 className="text-lg font-bold">Solicitud</h1>
+        <h1 className="text-lg font-bold">Estados de Solicitud</h1>
       </header>
 
       {/* Body */}

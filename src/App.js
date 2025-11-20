@@ -16,6 +16,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import VerificarCuenta from "./components/VerificarCuenta";
 import AyudaSolicitudesScreen from "./components/AyudaSolicitudesScreen";
 import FirmasPreviewScreen from "./components/FirmasPreviewScreen";
+import PerfilUsuario from "./components/PerfilUsuario";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
         <Route path="/AyudaSolicitudesScreen" element={<ProtectedRoute> <AyudaSolicitudesScreen/> </ProtectedRoute> }/>
         <Route path="/config_solicitudes" element={<ProtectedRoute> <ConfigSolicitudesScreen/> </ProtectedRoute> } />
         <Route path="/formulario_cae" element={<ProtectedRoute> <FormularioCAEScreen/> </ProtectedRoute> } />
+        <Route path="/perfil_usuario" element={<ProtectedRoute> <PerfilUsuario/> </ProtectedRoute> } />
         <Route path="/confirmar_formulario" element={<ProtectedRoute> <ConfirmarFormScreen/> </ProtectedRoute> } />
         <Route path="/sugerencias" element={<SugerenciasScreen/>} />
         <Route path="/estado_solicitud" element={<ProtectedRoute> <EstadosSolicitudesScreen/> </ProtectedRoute>} />

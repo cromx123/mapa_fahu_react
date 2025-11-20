@@ -16,9 +16,10 @@ export default function AsideMenu({ onToggle }) {
   const menuItems = [
     { name: "Solicitudes", path: "/solicitudes_screen" },
     { name: "Firmas", path: "/firmas" },
-    { name: "Ayuda", path: "/AyudaSolicitudesScreen" },
     { name: "Mapa del Campus", path: "/" },
+    { name: "Perfil", path: "/perfil_usuario" },
     { name: "Configuración", path: "/config_solicitudes" },
+    { name: "Ayuda", path: "/AyudaSolicitudesScreen" },
     { name: "Cerrar sesión", action: "logout" },
   ];
 
