@@ -87,8 +87,8 @@ export default function PerfilUsuario() {
     
   const TIPOS_USUARIO = Object.freeze({
     1: "Estudiante",
-    2: "Analista",
-    3: "Administrador",
+    3: "Analista",
+    2: "Administrador",
   });
 
   React.useEffect(() => {

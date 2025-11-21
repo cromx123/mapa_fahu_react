@@ -7,13 +7,15 @@ const USACH_ORANGE = "#E77500";
 export default function AsideMenu({ onToggle }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const data = JSON.parse(localStorage.getItem("user"));
+  const tipoUsuario = data.tipousuario_id;
 
   const onHandleCloseSession = () => {
     localStorage.removeItem("user");
     navigate("/");
   };
 
-  const menuItems = [
+  const menuUsers = [
     { name: "Solicitudes", path: "/solicitudes_screen" },
     { name: "Firmas", path: "/firmas" },
     { name: "Mapa del Campus", path: "/" },
@@ -22,6 +24,28 @@ export default function AsideMenu({ onToggle }) {
     { name: "Ayuda", path: "/AyudaSolicitudesScreen" },
     { name: "Cerrar sesión", action: "logout" },
   ];
+
+  const menuAdmin =[
+    { name: "Dashboard", path: "/admin/dashboard" },
+    { name: "Administrar Usuarios", path: "/admin/users" },
+    { name: "Administrar Solicitudes", path: "/admin/requests" },
+    { name: "Administrar Settings", path: "/admin/settings" },
+    { name: "Peticiones", path: "/admin/peticiones"}, // Manejemos las sugerencias, contactos o mensajes para cosas del mapa y de los formularios
+  ];
+
+  const menuAnalist =[
+    { name: "Dashboard", path: "/analist/dashboard"},
+  ]
+
+  let menuItems = [...menuUsers];
+
+  if (tipoUsuario === 2){
+    menuItems = [...menuAdmin, ...menuUsers];
+  }
+  
+  if (tipoUsuario === 3) {
+    menuItems = [...menuAnalist, ...menuUsers];
+  }
 
   return (
     <aside className="hidden md:flex flex-col w-56 min-h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-sm">
