@@ -137,8 +137,8 @@ export default function SolicitudesScreen() {
 
   const TIPOS_USUARIO = Object.freeze({
     1: "Estudiante",
-    2: "Analista",
-    3: "Administrador",
+    3: "Analista",
+    2: "Administrador",
   });
 
   
@@ -418,32 +418,31 @@ export default function SolicitudesScreen() {
                   );
                 })}
               </div>
+
+              <div className="flex items-center gap-4 mt-4 text-sm">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                  className="px-3 py-1 border rounded disabled:opacity-50"
+                >
+                  ‹ Anterior
+                </button>
+
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  className="px-3 py-1 border rounded disabled:opacity-50"
+                >
+                  Siguiente ›
+                </button>
+
+                <span className="text-gray-600 dark:text-gray-300">
+                  Página {currentPage} de {totalPages}, mostrando {solicitudesPagina.length} registro(s)
+                  de un total de {solicitudes.length}
+                </span>
+              </div>
             </>
           )}
-          <div className="flex items-center gap-4 mt-4 text-sm">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              ‹ Anterior
-            </button>
-
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              Siguiente ›
-            </button>
-
-            <span className="text-gray-600 dark:text-gray-300">
-              Página {currentPage} de {totalPages}, mostrando {solicitudesPagina.length} registro(s)
-              de un total de {solicitudes.length}
-            </span>
-          </div>
-
-
         </div>
       </div>
     </div>

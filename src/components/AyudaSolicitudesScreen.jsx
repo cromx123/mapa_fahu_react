@@ -7,8 +7,8 @@ export default function AyudaSolicitudesScreen() {
   
   const TIPOS_USUARIO = Object.freeze({
     1: "Estudiante",
-    2: "Analista",
-    3: "Administrador",
+    3: "Analista",
+    2: "Administrador",
   });
 
   return (

@@ -5,7 +5,7 @@ import useFirmas from "../hooks/useFirmas";
 
 export default function FirmasScreen() {
   const [accion, setAccion] = useState(null); // "agregar" | "modificar" | "eliminar" | null
-
+  const pre_data = JSON.parse(localStorage.getItem("user"));
   const [nombreFirma, setNombreFirma] = useState("");
   const [archivoFirma, setArchivoFirma] = useState(null);
   const [previewFirma, setPreviewFirma] = useState(null);
@@ -91,6 +91,12 @@ export default function FirmasScreen() {
     }
   };
 
+  const TIPOS_USUARIO = Object.freeze({
+    1: "Estudiante",
+    3: "Analista",
+    2: "Administrador",
+  });
+
   return (
     <div className="min-h-screen w-full flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <AsideMenu />
@@ -98,10 +104,14 @@ export default function FirmasScreen() {
       <div className="flex-1 flex flex-col">
         {/* TOP BAR */}
         <header className="px-4 py-3 bg-teal-600 text-white text-lg font-bold shadow">
-          <div className="flex justify-between items-center">
-            <span>Firmas</span>
-          </div>
-        </header>
+            <div className="flex justify-between items-center">
+              <span>Firmas</span>
+              <div className="flex flex-col text-right leading-tight">
+                <span className="font-semibold text-white">{pre_data.user_name}</span>
+                <span className="text-sm text-gray-200">{TIPOS_USUARIO[pre_data.tipousuario_id]}</span>
+              </div>
+            </div>
+          </header>
 
         {/* BODY */}
         <main className="flex-1 p-6 space-y-6">
