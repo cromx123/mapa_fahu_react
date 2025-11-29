@@ -22,7 +22,7 @@ export default function useSolicitudes() {
           `${API_URL}/solicitudes/usuario/${user.user_rut}`,
           {
             method: "GET",
-            credentials: "include",     // 👈 manda la cookie access_token
+            credentials: "include",  
           }
         );
 

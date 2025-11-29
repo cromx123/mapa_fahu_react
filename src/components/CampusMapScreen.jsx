@@ -189,7 +189,6 @@ export default function CampusMapScreen() {
   const [selectedFilter, setSelectedFilter] = useState(null);
   const isLargeScreen = useMemo(() => window.innerWidth > 800, []);
   const { t } = useAppSettings();
-  // ⟵⟵⟵ NUEVO: estado del Drawer
   const [openMenu, setOpenMenu] = useState(false);
 
 
