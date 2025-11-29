@@ -35,7 +35,8 @@ export default function AsideMenu({ onToggle }) {
 
   const menuAnalist =[
     { name: "Dashboard", path: "/analist/dashboard"},
-  ]
+    { name: "Gestion de Solicitudes", path :"/analist/solicitudes"}
+  ];
 
   let menuItems = [...menuUsers];
 

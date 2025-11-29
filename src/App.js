@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import HomeScreen from "./components/HomeScreen";
 import CampusMapScreen from "./components/CampusMapScreen";
 import ConfigScreen from "./components/ConfigScreen";
 import ConfigSolicitudesScreen from "./components/ConfigScreenSolicitudes";
@@ -25,7 +26,7 @@ import AdminSettings from "./components/admin/AdmSettings";
 import AnalistRoute from "./components/analist/AnalistRoute";
 import AdminRoute from "./components/admin/AdminRoute";
 import NoAuth from "./components/NoAuth";
-import AnalistSolicitudes from "./components/analist/solicitudes";
+import AnalistSolicitudes from "./components/analist/Solicitudes";
 import AnalistDashboard from "./components/analist/Dashboard";
 
 function App() {
@@ -33,11 +34,12 @@ function App() {
     <Router>
       <Routes>
         {/* pantalla principal */}
-        <Route path="/" element={<CampusMapScreen />} />
-
+        <Route path="/" element={<HomeScreen />} />
+        <Route path="/mapa" element={<CampusMapScreen />} />
+        <Route path="/login" element={<LoginScreen />} />
+        
         {/* pantallas accesibles desde DrawerMenu */}
         <Route path="/config" element={<ConfigScreen />} />
-        <Route path="/login" element={<LoginScreen />} />
         <Route path="/verificar-cuenta" element={<VerificarCuenta />} />
         <Route path="/verificar-correo" element={<VerificarCorreo />} />
         <Route path="/firmas" element={<FirmasPreviewScreen/>} />
